@@ -1,0 +1,22 @@
+quandl (R package for downloading data, as well as the other package she used in the code/scripts earlier)
+
+Quick test for series:
+
+- Rendimientos al quadrado 
+- Funciones de autocorrelacion de estos: Si tenemos factores significativos (un test rapido para ver si la variancia cambia a lo largo del tiempo). Si no hay factores significativos (muy poca prob), elige otra serie!
+
+She used package rugarch in R to estimate all the models, but FGarch also exists.
+
+We use the close-adjusted data, because they are adjusted for split de acciones y "anuncios de dividendos" (o algo similar, no me acuerdo exacto).
+
+Augmented Dickey-Fuller: To check if the amount of lags chosen by BIC is enugh, we need to check if the residuals have significant factors in the ACF (that is why it is plotted). If there are significant factors, increase the amount of lags manually.
+
+Tests for stationarity: https://www.statisticshowto.com/order-of-integration/
+To remember/explain what "integrado de orden ..." means.
+
+Leptocurtosis: Factor of kurtosis larger than 3 (in R, larger than 0, because it takes the 3 into account already). Leptokurtosis seems to mean that it is more "pointy" than the Gaussian. 
+
+Want the "raizes de polinomio caracteristico" to fall outside the unit circle (the inverse fall inside the circle). We look at these after estimating the ARMA-model, to check if the estimated MODEL is stationary.
+
+We want to modelize the signal in the time series (parsimoniously, with as few parameters as possible). Thus, if the ACF of the residuals are non-significant, then the order of the estimated model is good!
+ 
