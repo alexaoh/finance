@@ -1,0 +1,220 @@
+---
+title: "NASDAQ Composite"
+subtitle: "Trabajo Final - Modelos de Volatilidad - Financial Statistics"
+author: "Alexander J Ohrt"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  # html_document:
+  #   code_folding: hide
+  #   toc: true
+  #   toc_depth: 3
+  #   theme: readable
+  #   highlight: textmate
+  #   number_sections: true
+  pdf_document:
+    fig_caption: true
+    number_sections: true
+editor_options: 
+  chunk_output_type: console
+geometry:
+  margin = 2.5cm
+---
+
+\tableofcontents
+\newpage
+
+```{r setup, include=FALSE}
+rm(list = ls())
+knitr::opts_chunk$set(echo = TRUE, warning = F, fig.width = 10, comment = "#>")
+setwd("/home/ajo/gitRepos/finance")
+library(quantmod)
+library(fBasics)
+library(urca)
+```
+
+# Abstract
+The mean and conditional variance of the NASDAQ Composite index are modelized. The work shows that ...
+
+MAKE REFERENCES BETWEEN PLOTS (NUMBERS AND CITATIONS IN TEXT, bookdown is necessary maybe?) LATER. 
+
+\newpage
+# Introduction 
+Describe
+
+* Scenario and objective of the work. What will be analyzed. 
+* Precise description of variable (NASDAG Composite) used in the analysis and description of where the data is gathered from (Yahoo Finance)
+* Summary of structure of the work (description of what is done in each part)
+
+https://finance.yahoo.com/quote/%5EIXIC?p=%5EIXIC
+
+
+\newpage
+# Empirical Application
+
+## Load Data 
+First, we load the NASDAQ Composite data from Yahoo Finance.
+
+```{r, echo = F}
+options("getSymbols.warning4.0"=FALSE)
+```
+
+
+```{r}
+getSymbols("^IXIC",from="2015-01-01", to="2022-03-01", warnings = F) 
+dim(IXIC)         # <=== find the size of the data downloaded
+#write.csv(IXIC, file = "IXIC.csv", row.names = F)
+#data <- read.csv2("IXIC.csv")
+
+# Want the adjusted closed data.
+ixic <- IXIC[,6]
+```
+
+The data does not have any NA values (Weekends and holidays have been removed already), we can start working with the data directly. 
+
+```{r, echo = F}
+plot(ixic)
+```
+
+COMMENT: DRAW SOME HAPPENINGS IN THE SERIES (Covid March 2020 and Russia-Ukraine in Feb 2022 + leading up to Feb in the beginning of 2022). Did something happen in Jan 2019 in the US (with tech-companies?)
+
+
+## Analysis of Stationarity
+In order to see if the series is stationary, we will employ both informal and formal tests. Immediately, by looking at the plot above (reference later), the series does not look stationary, since the mean of the process looks to change quite severely with time. Some more informal tests are done. The function of autocorrelation and partial autocorrelation (empirical) for the series are plotted below. 
+
+```{r}
+par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1) 
+acf(ixic,ylim=c(-1,1),main="ixic")
+pacf(ixic,ylim=c(-1,1),main="ixic")
+```
+
+As is seen from the function of autocorrelation (ACF), the "terms" decrease slowly. This suggests that the time series is non-stationary, since a stationary series would show exponentially decreasing "terms" in the ACF. 
+
+SJEKK AT ALT DETTE GIR MENING (OG BRUKER KORREKTE BEGREPER) SENERE! (TIL SLUTT)
+
+Next, some Ljung-Box tests are done. 
+
+```{r}
+Box.test(ixic, lag = 1, type = c("Ljung-Box"))
+Box.test(ixic, lag = 5, type = c("Ljung-Box"))
+Box.test(ixic, lag = 10, type = c("Ljung-Box"))
+Box.test(ixic, lag = 15, type = c("Ljung-Box"))
+Box.test(ixic, lag = 20, type = c("Ljung-Box"))
+```
+
+All the p-values from the Ljung-Box tests shown are low, which further suggests that the series is non-stationary WHY?
+
+Next, some formal tests are done to check stationarity of the series. 
+
+```{r, eval = F}
+#ADF= funci?n general: ur.df(x, type = c("none", "drift", "trend"), lags = 1, selectlags = c("Fixed", "AIC", "BIC"))  
+# Lag selection can be achieved according to the Akaike "AIC" or the Bayes "BIC" information criteria. The maximum number of lags considered is set by lags.
+# The default is to use a "fixed" lag length set by lags
+# If type is set to "none" neither an intercept nor a trend is included in the test regression. If it is set to "drift" an intercept is added
+# and if it is set to "trend" both an intercept and a trend is added
+
+#series de precios
+
+#CON CONSTANTE Y BIC
+ibex35.df<-ur.df(ibex35, type = c("drift"), lags=20, selectlags = c("BIC"))
+summary(ibex35.df)	
+# Residual plot, acfs' and pacfs'.
+plot(ibex35.df)
+
+#CON CONSTANTE Y AIC
+ibex35.df<-ur.df(ibex35, type = c("drift"), lags=20, selectlags = c("AIC"))
+summary(ibex35.df)	
+
+#Con CONSTANTE Y 2 LAGS
+ibex35.df<-ur.df(ibex35, type = c("drift"), lags=2)
+summary(ibex35.df)	
+# Residual plot, acfs' and pacfs'.
+plot(ibex35.df)
+
+
+#CON TENDENCIA
+ibex35.df<-ur.df(ibex35, type = c("trend"), lags=2)
+summary(ibex35.df)
+
+
+#series de rendimientos
+rendibex=diff(log(ibex35))
+plot(rendibex)
+rendibex<-rendibex[-1] #eliminamos la primera observaci?n que ahora es NA porque si no, el contraste da un error
+
+
+rendibex.df<-ur.df(rendibex, type = c("none"), lags=20, selectlags = c("BIC"))
+summary(rendibex.df)	
+
+
+# Residual plot, acfs' and pacfs'.
+plot(rendibex.df)
+
+
+
+#PP= funci?n general: ur.pp(x, type = c("Z-alpha", "Z-tau"), model = c("constant", "trend"), lags = c("short", "long"), use.lag = NULL) # use.lag=NULL es para especificar el lag
+# los resultados no cambian si se usa Z-alpha o Z-thau o short o long
+# ojo!!!! los valores cr?ticos son los tabulados por mackinnon que coinciden con los del ADF test (Z-tau los da pero Z-alpha no los da)  
+# lags="short" sets the number of lags to (4*(n/100))^(1/4), whereas lags="long" sets the number of lags to (12*(n/100))^(1/4). 
+
+#series de precios
+
+ibex35.pp<-ur.pp(ibex35, type = c("Z-tau"), model = c("constant"), lags = c("long"))
+summary(ibex35.pp)	
+
+ibex35.pp<-ur.pp(ibex35, type = c("Z-tau"), model = c("trend"), lags = c("short"))
+summary(ibex35.pp)
+
+#series de rendimientos
+
+rendibex.pp<-ur.pp(rendibex, type = c("Z-tau"), model = c("constant"), lags = c("short"))
+summary(rendibex.pp)	
+
+
+
+#KPSS test= funci?n general: ur.kpss(y, type = c("mu", "tau"), lags = c("short", "long", "nil"), use.lag = NULL) #The test types specify
+#as deterministic component either a constant "mu" or a constant with linear trend "tau".If lags="nil" is choosen, then no error correction is made. Furthermore,
+#one can specify a different number of maximum lags by setting use.lag accordingly.
+
+#series de precios
+
+ibex35.kpss<-ur.kpss(ibex35, type = c("mu"), lags = c("short"))
+summary(ibex35.kpss)
+
+#series de rendimientos
+
+# This is for checking that the returns are I(0), i.e. that the series is I(0)
+# Check if this makes sense with IXIC later!
+
+rendibex.kpss<-ur.kpss(rendibex, type = c("mu"), lags = c("short"))
+summary(rendibex.kpss)
+```
+
+
+
+
+```{r}
+rendixic <- diff(log(ixic))
+rendixic <- rendixic[-1] # The first difference is NA, needs to be removed. 
+```
+
+```{r, echo = F}
+plot(rendixic)
+```
+
+
+## Basic Statistical Properties
+
+```{r}
+basicStats(rendixic)
+```
+
+```{r, echo = F}
+hist(rendixic,breaks=20,freq=F, main = 'Histogram of the Returns')
+curve(dnorm(x, mean=mean(rendixic), sd=sd(rendixic)), col=2, add=T)
+```
+
+We can see that the series is Leptokurtic, both by the kurtosis value and from the histogram above. The red curve above is a Gaussian distribution with empirical mean and standard error according to the returns of the NASDAQ Composite series. 
+
+
+
+# Conclusions 
