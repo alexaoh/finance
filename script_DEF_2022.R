@@ -1,5 +1,5 @@
 #####################################
-#Instalación de packages y libraries# 
+#Instalaci?n de packages y libraries# 
 #####################################
 
 install.packages("tseries")  
@@ -49,12 +49,12 @@ ibex=IBEX[,6]
 
 
 #################################
-# Gráfico de la serie temporal###
+# Gr?fico de la serie temporal###
 #################################
 
 plot(ibex)
 
-#Como hay datos non-available, o los sustituimos por la observación anterior
+#Como hay datos non-available, o los sustituimos por la observaci?n anterior
 ibex35<-na.locf(ibex, fromLast = TRUE) 
 length(ibex35)
 plot(ibex35)
@@ -63,14 +63,14 @@ plot(ibex35)
 
 #o los eliminamos
 #ibex35<-na.omit(ibex)
-#Estadísticos básicos de las series
+#Estad?sticos b?sicos de las series
 
 
 #########################################
-#Análisis de estacionariedad de la serie#
+#An?lisis de estacionariedad de la serie#
 #########################################
 
-#Pruebas informales: gráfico de la serie, fac, facp y Ljung-Box test
+#Pruebas informales: gr?fico de la serie, fac, facp y Ljung-Box test
 
 win.graph(width=8,height=5)
 par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1) 
@@ -85,9 +85,9 @@ Box.test(ibex35, lag = 15, type = c("Ljung-Box"))
 Box.test(ibex35, lag = 20, type = c("Ljung-Box"))
 
 
-#pruebas formales (contrastes de raíces unitarias)
+#pruebas formales (contrastes de ra?ces unitarias)
 
-#ADF= función general: ur.df(x, type = c("none", "drift", "trend"), lags = 1, selectlags = c("Fixed", "AIC", "BIC"))  
+#ADF= funci?n general: ur.df(x, type = c("none", "drift", "trend"), lags = 1, selectlags = c("Fixed", "AIC", "BIC"))  
 # Lag selection can be achieved according to the Akaike "AIC" or the Bayes "BIC" information criteria. The maximum number of lags considered is set by lags.
 # The default is to use a "fixed" lag length set by lags
 # If type is set to "none" neither an intercept nor a trend is included in the test regression. If it is set to "drift" an intercept is added
@@ -120,7 +120,7 @@ summary(ibex35.df)
 #series de rendimientos
 rendibex=diff(log(ibex35))
 plot(rendibex)
-rendibex<-rendibex[-1] #eliminamos la primera observación que ahora es NA porque si no, el contraste da un error
+rendibex<-rendibex[-1] #eliminamos la primera observaci?n que ahora es NA porque si no, el contraste da un error
 
 
 rendibex.df<-ur.df(rendibex, type = c("none"), lags=20, selectlags = c("BIC"))
@@ -132,9 +132,9 @@ plot(rendibex.df)
 
 
 
-#PP= función general: ur.pp(x, type = c("Z-alpha", "Z-tau"), model = c("constant", "trend"), lags = c("short", "long"), use.lag = NULL) # use.lag=NULL es para especificar el lag
+#PP= funci?n general: ur.pp(x, type = c("Z-alpha", "Z-tau"), model = c("constant", "trend"), lags = c("short", "long"), use.lag = NULL) # use.lag=NULL es para especificar el lag
 # los resultados no cambian si se usa Z-alpha o Z-thau o short o long
-# ojo!!!! los valores críticos son los tabulados por mackinnon que coinciden con los del ADF test (Z-tau los da pero Z-alpha no los da)  
+# ojo!!!! los valores cr?ticos son los tabulados por mackinnon que coinciden con los del ADF test (Z-tau los da pero Z-alpha no los da)  
 # lags="short" sets the number of lags to (4*(n/100))^(1/4), whereas lags="long" sets the number of lags to (12*(n/100))^(1/4). 
 
 #series de precios
@@ -152,7 +152,7 @@ summary(rendibex.pp)
 
 
 
-#KPSS test= función general: ur.kpss(y, type = c("mu", "tau"), lags = c("short", "long", "nil"), use.lag = NULL) #The test types specify
+#KPSS test= funci?n general: ur.kpss(y, type = c("mu", "tau"), lags = c("short", "long", "nil"), use.lag = NULL) #The test types specify
 #as deterministic component either a constant "mu" or a constant with linear trend "tau".If lags="nil" is choosen, then no error correction is made. Furthermore,
 #one can specify a different number of maximum lags by setting use.lag accordingly.
 
@@ -175,7 +175,7 @@ plot(rendibex)
 
 
 
-#Estadísticos básicos de las series
+#Estad?sticos b?sicos de las series
 
 sd(rendibex)
 min(rendibex)
@@ -184,13 +184,13 @@ skewness(rendibex)
 kurtosis(rendibex)
 summary(rendibex)
 normalTest(rendibex,method="jb")
-basicStats(rendibex) #esta es la opción más completa
+basicStats(rendibex) #esta es la opci?n m?s completa
 
 win.graph(width=8,height=5)
 hist(rendibex,breaks=20,freq=F, main = 'Histograma de los rendimientos')
 curve(dnorm(x, mean=mean(rendibex), sd=sd(rendibex)), col=2, add=T)
 
-#FASE 1: IDENTIFICACIÓN DEL MODELO
+#FASE 1: IDENTIFICACI?N DEL MODELO
 
 #fac, facp y Ljung-Box test
 
@@ -200,7 +200,7 @@ acf(rendibex,ylim=c(-1,1),main="rendibex35")
 pacf(rendibex,ylim=c(-1,1),main="rendibex35")
 
 
-#FASE 2: ESTIMACIÓN DEL MODELO
+#FASE 2: ESTIMACI?N DEL MODELO
 
 
 #ar(1)
@@ -233,7 +233,7 @@ pnorm(c(abs(model5$coef)/sqrt(diag(model5$var.coef))), mean=0, sd=1, lower.tail=
 # FASE3: DIAGNOSIS
 
 #Estacionariedad del modelo 
-#todas las raíces del polinomio característico deben caer fuera del círculo unitario
+#todas las ra?ces del polinomio caracter?stico deben caer fuera del c?rculo unitario
 
 
 
@@ -241,7 +241,7 @@ plot(model4) #Produces a plot of the inverse AR and MA roots of an ARIMA model
 
 
 
-# Análisis de los residuos
+# An?lisis de los residuos
 tsdiag(model4) #dibuja los residuos estandarizados, la ACF de los residuos y los pvalues del Ljung-Box test
 
 
@@ -256,11 +256,11 @@ qqline(model4$residuals, datax = FALSE)
 
 
 plot(model4$residuals)
-title (main="Gráfico de los residuos")
+title (main="Gr?fico de los residuos")
 normalTest(model4$residuals,method="jb")
 
 
-# TESTS GARCH Y FASE1 DE IDENTIFICACIÓN DEL MODELO GARCH
+# TESTS GARCH Y FASE1 DE IDENTIFICACI?N DEL MODELO GARCH
 
 # ACF y PACF de los residuos al cuadrado 
 residuos=model4$residuals
@@ -277,30 +277,30 @@ Box.test(residuos2,lag=5,type='Ljung')
 Box.test(residuos2,lag=15,type='Ljung')
 Box.test(residuos2,lag=20,type='Ljung')
 
-# FASE2 y 3: ESTIMACIÓN DEL MODELO GARCH Y DIAGNOSIS
+# FASE2 y 3: ESTIMACI?N DEL MODELO GARCH Y DIAGNOSIS
 
 
 #OJO! Mirar condiciones de estacionariedad y positividad
-#garchOrder podemos aumentar el orden del Garch, normalmente será (1,1) pero excepcionalmente podemos necesitar aumentar el orden
+#garchOrder podemos aumentar el orden del Garch, normalmente ser? (1,1) pero excepcionalmente podemos necesitar aumentar el orden
 
-#Ejemplo AR(2)-GARCH(1,1) con distribución Normal
+#Ejemplo AR(2)-GARCH(1,1) con distribuci?n Normal
 spec1=ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(1,1)), mean.model=list(armaOrder=c(2,0)), distribution.model = "norm")
 m4=ugarchfit(spec=spec1,data=rendibex)
-m4 #observamos que el parámetro AR(2) ha dejado de ser significativo
+m4 #observamos que el par?metro AR(2) ha dejado de ser significativo
 
 
-#Ejemplo AR(1)-GARCH(1,1) con distribución Normal
+#Ejemplo AR(1)-GARCH(1,1) con distribuci?n Normal
 spec1=ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(1,1)), mean.model=list(armaOrder=c(1,0)), distribution.model = "norm")
 m4=ugarchfit(spec=spec1,data=rendibex)
 m4 
 
 
-#obtención residuos 
-#obtención de los residuos
+#obtenci?n residuos 
+#obtenci?n de los residuos
 plot(m4) 
 
-#obtención de la volatilidad estimada 
-#opción 1 
+#obtenci?n de la volatilidad estimada 
+#opci?n 1 
 v = sigma(m4)#para obtener la volatilidad estimada, 
 v_anualizada=(250)^0.5*v
 plot(v_anualizada)
@@ -308,7 +308,7 @@ write.table(v_anualizada,file = "volatility.csv", sep = ";")
 
 
 
-#opción 2 (volatilidad y rendimientos juntos)
+#opci?n 2 (volatilidad y rendimientos juntos)
 
 par(mfcol=c(2,1))  # Show volatility and returns
 plot(v_anualizada)
@@ -322,24 +322,24 @@ m6=ugarchfit(spec=spec1,data=rendibex)
 m6
 
 plot(m6)
-#obtención de la volatilidad estimada 
+#obtenci?n de la volatilidad estimada 
 
-#opción 1 
+#opci?n 1 
 v = sigma(m6)#para obtener la volatilidad estimada, 
 v_anualizada=(250)^0.5*v
 plot(v_anualizada)
 write.table(v_anualizada,file = "volatility.csv", sep = ";")
 
-#opción 2 (volatilidad y rendimientos juntos)
+#opci?n 2 (volatilidad y rendimientos juntos)
 
 par(mfcol=c(2,1))  # Show volatility and returns
 plot(v_anualizada)
 plot(rendibex) 
 
 
-#Más modelos de volatilidad 
+#M?s modelos de volatilidad 
 
-# GARCH-M  CON ugarchspec. archpow=1 utiliza la desviación estándar. archpow=2 utiliza la varianza
+# GARCH-M  CON ugarchspec. archpow=1 utiliza la desviaci?n est?ndar. archpow=2 utiliza la varianza
 spec1=ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(1,1)), mean.model=list(armaOrder=c(1,0), archm=TRUE, archpow=1), distribution.model = "std")
 m7=ugarchfit(spec=spec1,data=rendibex)
 m7
@@ -347,14 +347,14 @@ m7
 
 
 #Egarch 
-#OJO, el coeficiente de la asimetría es el alpha1, mirar documentación INTRODUCTORIA del paquete rugarch
+#OJO, el coeficiente de la asimetr?a es el alpha1, mirar documentaci?n INTRODUCTORIA del paquete rugarch
 
-#distribución normal
+#distribuci?n normal
 spec1=ugarchspec(variance.model=list(model="eGARCH", garchOrder = c(1,1)),mean.model=list(armaOrder=c(1,0)), distribution.model = "norm")
 m8=ugarchfit(spec=spec1,data=rendibex)
 m8
 
-#distribución t-student
+#distribuci?n t-student
 spec1=ugarchspec(variance.model=list(model="eGARCH", garchOrder = c(1,1)), mean.model=list(armaOrder=c(1,0)), distribution.model = "std")
 m9=ugarchfit(spec=spec1,data=rendibex)
 m9
@@ -363,26 +363,26 @@ plot(m9)
 
 #GJR-GARCH model 
 
-# distribución normal
+# distribuci?n normal
 spec1=ugarchspec(variance.model=list(model="gjrGARCH", garchOrder = c(1,1)), mean.model=list(armaOrder=c(1,0)), distribution.model = "norm")
 m10=ugarchfit(spec=spec1,data=rendibex)
 m10
 
-# alternativa rugarch, distribución student, este es el mejor
+# alternativa rugarch, distribuci?n student, este es el mejor
 spec1=ugarchspec(variance.model=list(model="gjrGARCH", garchOrder = c(1,1)), mean.model=list(armaOrder=c(1,0)), distribution.model = "std")
 m11=ugarchfit(spec=spec1,data=rendibex)
 m11
 plot(m11)
 
-#obtención de los residuos
+#obtenci?n de los residuos
 resi=residuals(m11,standardize=T) # Standardized residuals
 par(mfcol=c(2,1)) # Obtain ACF & PACF
 acf(resi,lag=24)
 acf(resi^2,lag=24)
 
 
-#obtención de la volatilidad estimada 
-#opción 1 
+#obtenci?n de la volatilidad estimada 
+#opci?n 1 
 v = sigma(m11)#para obtener la volatilidad estimada, 
 v_anualizada=(250)^0.5*v
 plot(v_anualizada)
@@ -390,7 +390,7 @@ write.table(v_anualizada,file = "volatility.csv", sep = ";")
 dev.off()
 
 
-#opción 2 (volatilidad y rendimientos juntos)
+#opci?n 2 (volatilidad y rendimientos juntos)
 
 par(mfcol=c(2,1))  # Show volatility and returns
 plot(v_anualizada)
@@ -400,7 +400,7 @@ plot(rendibex)
 
 
 
-#COMPARARación VOLATILIDAD CON LOS RENDIMIENTOS en valor absoluto
+#COMPARARaci?n VOLATILIDAD CON LOS RENDIMIENTOS en valor absoluto
 
 returnsabs=abs(rendibex)
 par(mfcol=c(2,1))  # Show volatility and returns
@@ -413,7 +413,7 @@ time = data.frame(returnsabs, v)
 ts.plot(time,gpars= list(xlab="time", ylab=",", col = 1:ncol(time)))
 legend("topleft", c("returnsabs","v"), lty=c(1,1), col=c("black","red"), cex=0.6)
 
-#ANÁLISIS ADICIONALES
+#AN?LISIS ADICIONALES
 
 
 ###################
@@ -435,10 +435,10 @@ library(fTrading)
 
 #primero le doy formato 
 Fechas<-as.Date(rownames(zoo(IBEX)))
-Fechas<-Fechas[-1] #eliminamos la primera observación de Fechas, la hemos perdido al calcular los rendimientos
+Fechas<-Fechas[-1] #eliminamos la primera observaci?n de Fechas, la hemos perdido al calcular los rendimientos
 
 vol.hist20 <- SMA(rendibex^2, n=20) 
-Fechas2<-Fechas[21:1563]#hemos perdido las primeras 20 observaciones para calcular la primera varianza. Añadimos una observación más dado que con las 20 últimas observaciones calculamos la volatilidad 1 paso hacia adelante.
+Fechas2<-Fechas[21:1563]#hemos perdido las primeras 20 observaciones para calcular la primera varianza. A?adimos una observaci?n m?s dado que con las 20 ?ltimas observaciones calculamos la volatilidad 1 paso hacia adelante.
 plot(Fechas2, vol.hist20, type="l", ylab='variance', main='1 month moving average')
 
 
@@ -503,7 +503,7 @@ legend("topleft", c("GJR-GARCH","1 month moving average"), lty=c(1,1), col=c("bl
 
 
 
-#PREDICCIÓN
+#PREDICCI?N
 
 getSymbols("^IBEX",from="1994-01-01", to="2000-01-01") 
 
@@ -519,11 +519,11 @@ plot(rendibex,type="l",col="blue",main="returns")
 
 spec1=ugarchspec(variance.model=list(model="gjrGARCH", garchOrder = c(1,1)), mean.model=list(armaOrder=c(1,0)), distribution.model = "std")
 m12=ugarchfit(spec=spec1,data=rendibex, out.sample = 10)#out of sample son las observaciones que deja fuera para comparar, no las utiliza para estimar
-forc = ugarchforecast(m12, n.ahead=10, n.roll= 0) #esto hace predicción desde T diez pasos hacia adelante (es decir: desde T predice T+1, T+2, ....)
-show(forc) #SERIES ES LA PREDICCIÓN DE LA MEDIA Y SIGMA DE LA DESVIACIÓN TÍPICA
+forc = ugarchforecast(m12, n.ahead=10, n.roll= 0) #esto hace predicci?n desde T diez pasos hacia adelante (es decir: desde T predice T+1, T+2, ....)
+show(forc) #SERIES ES LA PREDICCI?N DE LA MEDIA Y SIGMA DE LA DESVIACI?N T?PICA
 fpm(forc) #forecast performance measures. It requires at least 5 points to calculate the summary measures else will return NA. Son de la media
 m12@model$modeldata$T#dice cuantos datos ha utilizado para estimar el modelo
-plot(forc)#si no hacemos rolling, solo tiene sentido la opción 1 y 3. ojo
+plot(forc)#si no hacemos rolling, solo tiene sentido la opci?n 1 y 3. ojo
 
 uncvariance(m12)^0.5
 
@@ -533,7 +533,7 @@ forc = ugarchforecast(m13, n.ahead=1, n.roll= 10) # REESTIMA EL MODELO CADA VEZ!
 #Y N.ROLL EL NUMERO DE VECES QUE REESTIMA, EN ESTE CASO RESTIMA 10 VECES Y CADA VEZ QUE REESTIMA PREDICE PARA 1 PASOS HACIA ADELANTE. sI N.ROLL=1 SOLO REESTIMA 1 VEZ).
 
 fpm(forc) #forecast performance measures. It requires at least 5 points to calculate the summary measures else will return NA
-sigma(forc) #predicciones de la desviación típica con rolling window, para cada T hace 1 paso hacia adelante
+sigma(forc) #predicciones de la desviaci?n t?pica con rolling window, para cada T hace 1 paso hacia adelante
 fitted(forc)#predicciones de la media con rolling window, para cada T hace 1 paso para adelante
 plot(forc)
 
@@ -545,10 +545,10 @@ forc = ugarchforecast(m13, n.ahead=1, n.roll= 100) # REESTIMA EL MODELO CADA VEZ
 #Y N.ROLL EL NUMERO DE VECES QUE REESTIMA, EN ESTE CASO RESTIMA 100 VECES Y CADA VEZ QUE REESTIMA PREDICE PARA 1 PASOS HACIA ADELANTE. sI N.ROLL=1 SOLO REESTIMA 1 VEZ).
 
 fpm(forc) #forecast performance measures. It requires at least 5 points to calculate the summary measures else will return NA
-sigma(forc) #predicciones de la desviación típica con rolling window, para cada T hace 1 paso hacia adelante
+sigma(forc) #predicciones de la desviaci?n t?pica con rolling window, para cada T hace 1 paso hacia adelante
 fitted(forc)#predicciones de la media con rolling window, para cada T hace 1 paso para adelante
 plot(forc)
-#plot(forc,which="all") #al dibujar el rolling lo que dibuja es la predicción a T+1 hecha en cada T
+#plot(forc,which="all") #al dibujar el rolling lo que dibuja es la predicci?n a T+1 hecha en cada T
 
 
 
@@ -559,7 +559,7 @@ plot(forc)
 ##########################
 #modelo DCC multivariante# 
 ##########################
-#como no bajo los datos de quantmode, dará un error en las fechas
+#como no bajo los datos de quantmode, dar? un error en las fechas
 
 #Instalamos paquete
 install.packages("rmgarch")
@@ -569,16 +569,16 @@ library(rmgarch)
 datos<-read.table("bonos2.txt", header=TRUE, sep="")
 names(datos)
 attach(datos)
-# Conversión de fecha a formato fecha
+# Conversi?n de fecha a formato fecha
 date<-as.Date(datos$Date,"%d/%m/%Y")  
 
-# Gráfico de la serie temporal
+# Gr?fico de la serie temporal
 plot(date,Austria,type="l",col="blue", ylim=c(50,270),main="Prices")
 lines(date,Grecia,type="l",col="red")
 legend("bottomleft", c("Austria","Grecia"), lty=c(1,1), col=c("blue","red"))
 
 
-#Cálculo de rendimientos
+#C?lculo de rendimientos
 rendaustria <- diff(log(Austria))
 rendgrecia <- diff(log(Grecia))
 
@@ -595,20 +595,20 @@ plot(Date,rend2,type="l",col="blue",main="returns")
 returns = cbind(rend1,rend2) 
 
 
-# dcc specification - GARCH(1,1) for conditional correlations con diferentes garch para cada serie, en algún caso no es modelo asimétrico
+# dcc specification - GARCH(1,1) for conditional correlations con diferentes garch para cada serie, en alg?n caso no es modelo asim?trico
 spec1 = ugarchspec(mean.model = list(armaOrder = c(1,0)), variance.model = list(garchOrder = c(1,1), model = "sGARCH"), distribution.model = "std") 
 spec2 = ugarchspec(mean.model = list(armaOrder = c(1,0)), variance.model = list(garchOrder = c(1,1), model = "gjrGARCH"), distribution.model = "std") 
 dcc.garch11.spec = dccspec(uspec = multispec(c(spec1, spec2)), dccOrder = c(1,1), distribution = "mvnorm")
 dcc.fit = dccfit(dcc.garch11.spec, data = returns)
 dcc.fit
 
-# dcc specification - GARCH(1,1) for conditional correlations, con idéntico garch para cada serie
+# dcc specification - GARCH(1,1) for conditional correlations, con id?ntico garch para cada serie
 dcc.garch11.spec2 = dccspec(uspec = multispec( replicate(2, spec1) ), dccOrder = c(1,1), distribution = "mvnorm")
 dcc.fit2 = dccfit(dcc.garch11.spec2, data = returns)
 dcc.fit2
 
 
-# dcc specification - GARCH(1,1) for conditional correlations, con idéntico garch para cada serie y distribución t-student
+# dcc specification - GARCH(1,1) for conditional correlations, con id?ntico garch para cada serie y distribuci?n t-student
 dcc.garch11.spec3 = dccspec(uspec = multispec( replicate(2, spec1) ), dccOrder = c(1,1), distribution = "mvt")
 dcc.fit3 = dccfit(dcc.garch11.spec3, data = returns)
 dcc.fit3
@@ -633,11 +633,11 @@ plot(dcc.fit3)
 
 
 cor1 = rcor(dcc.fit3) 
-dim(cor1) #This tells us that cor1 stores 1908 (2×2) correlation matrices, one for each day of data. 
+dim(cor1) #This tells us that cor1 stores 1908 (2?2) correlation matrices, one for each day of data. 
 cor1 #
 rcor(dcc.fit3)[,,1] #muestra el primer elemento. Vemos que es una matriz 2x2
 
-plot(Date,rcor(dcc.fit3)[1,2,], type='l', main="Correlación Austria_Grecia")
+plot(Date,rcor(dcc.fit3)[1,2,], type='l', main="Correlaci?n Austria_Grecia")
 write.table(rcor(dcc.fit3)[1,2,],file="correlaciones.csv")
 
 
@@ -645,11 +645,11 @@ par(mfcol=c(2,1))
 plot(date,Austria,type="l",col="blue", ylim=c(50,270),main="Prices")
 lines(date,Grecia,type="l",col="red")
 legend("bottomleft", c("Austria","Grecia"), lty=c(1,1), col=c("blue","red"))
-plot(Date,rcor(dcc.fit3)[1,2,], type='l', main="Correlación Austria_Grecia")
+plot(Date,rcor(dcc.fit3)[1,2,], type='l', main="Correlaci?n Austria_Grecia")
 
 dev.off()
 
-#superfície de impacto a las noticias#
+#superf?cie de impacto a las noticias#
 nisurface(dcc.fit3, type="cor")
 
 
@@ -662,17 +662,17 @@ dccf1 <- dccforecast(dcc.fit3, n.ahead = 10)
 
 Rf <- dccf1@mforecast$R    # use H instead of R for the covariance forecast
 show(Rf) 
-str(Rf) #you realise that the object Rf is a list with one element. It turns out that this one list item is then a 2 dimensional matrix/array which contains the the 10 forecasts of 2×2 correlation matrices.
+str(Rf) #you realise that the object Rf is a list with one element. It turns out that this one list item is then a 2 dimensional matrix/array which contains the the 10 forecasts of 2?2 correlation matrices.
 
 Hf <- dccf1@mforecast$H #variance-covariance matrix forecasts
 show(Hf)
 
 corf <- Rf[[1]][1,2,]  # Correlation forecasts between bonds. [ [1] ] tells R to go to the first (and here only) list item and then [1,2,] instructs R to select the (1,2) element of all available correlation matrices.
-plot(corf, main="Predicción de la correlación")
+plot(corf, main="Predicci?n de la correlaci?n")
 
 #otro ejemplo
 rm(list = ls())
-getSymbols("AAPL",src="yahoo",from="2006-05-31",to="2016-05-27")  #Obtenemos una muestra de 10 años de la serie de precios de Apple.
+getSymbols("AAPL",src="yahoo",from="2006-05-31",to="2016-05-27")  #Obtenemos una muestra de 10 a?os de la serie de precios de Apple.
 getSymbols("MSFT",src="yahoo",from="2006-05-31",to="2016-05-27")  
 
 AAPL=AAPL[,6]
@@ -690,14 +690,14 @@ rMSFT <- dailyReturn(MSFT)
 
 rX=cbind(rAAPL, rMSFT)
 
-# dcc specification - GARCH(1,1) for conditional correlations, con idéntico garch para cada serie
+# dcc specification - GARCH(1,1) for conditional correlations, con id?ntico garch para cada serie
 spec1 = ugarchspec(mean.model = list(armaOrder = c(0,0)), variance.model = list(garchOrder = c(1,1), model = "sGARCH"), distribution.model = "std") 
 dcc.garch11.spec2 = dccspec(uspec = multispec( replicate(2, spec1) ), dccOrder = c(1,1), distribution = "mvnorm")
 dcc.fit2 = dccfit(dcc.garch11.spec2, data = rX)
 dcc.fit2
 
 cor1 = rcor(dcc.fit2) 
-dim(cor1) #This tells us that cor1 stores 2516 (2×2) correlation matrices, one for each day of data. 
+dim(cor1) #This tells us that cor1 stores 2516 (2?2) correlation matrices, one for each day of data. 
 cor1 #Let's have a look at the correlation matrix 
 
 cor_AM <- cor1[1,2,]   # leaving the last dimension empty implies that we want all elements
@@ -716,7 +716,7 @@ dccf1 <- dccforecast(dcc.fit2, n.ahead = 10)
 
 Rf <- dccf1@mforecast$R    # use H for the covariance forecast
 show(Rf) 
-str(Rf) #you realise that the object Rf is a list with one element. It turns out that this one list item is then a 3 dimensional matrix/array which contains the the 10 forecasts of 2×2 correlation matrices.
+str(Rf) #you realise that the object Rf is a list with one element. It turns out that this one list item is then a 3 dimensional matrix/array which contains the the 10 forecasts of 2?2 correlation matrices.
 
 
 corf <- Rf[[1]][1,2,]  # Correlation forecasts between bonds. [ [1] ] tells R to go to the first (and here only) list item and then [1,2,] instructs R to select the (1,2) element of all available correlation matrices.

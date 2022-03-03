@@ -5,7 +5,7 @@ author: "Alexander J Ohrt"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
   # html_document:
-  #   code_folding: hide
+  #   code_folding: show
   #   toc: true
   #   toc_depth: 3
   #   theme: readable
@@ -30,6 +30,7 @@ setwd("/home/ajo/gitRepos/finance")
 library(quantmod)
 library(fBasics)
 library(urca)
+library(forecast)
 ```
 
 # Abstract
@@ -60,7 +61,7 @@ options("getSymbols.warning4.0"=FALSE)
 
 
 ```{r}
-getSymbols("^IXIC",from="2015-01-01", to="2022-03-01", warnings = F) 
+getSymbols("^IXIC",from="2012-01-01", to="2022-03-01", warnings = F) 
 dim(IXIC)         # <=== find the size of the data downloaded
 #write.csv(IXIC, file = "IXIC.csv", row.names = F)
 #data <- read.csv2("IXIC.csv")
@@ -75,11 +76,11 @@ The data does not have any NA values (Weekends and holidays have been removed al
 plot(ixic)
 ```
 
-COMMENT: DRAW SOME HAPPENINGS IN THE SERIES (Covid March 2020 and Russia-Ukraine in Feb 2022 + leading up to Feb in the beginning of 2022). Did something happen in Jan 2019 in the US (with tech-companies?)
+COMMENT: DRAW SOME HAPPENINGS IN THE SERIES (Covid March 2020 and Russia-Ukraine in Feb 2022 + leading up to Feb in the beginning of 2022). Did something happen in Jan 2019 in the US (with tech-companies?) Did something happen in Jan 2016 (small regression).
 
 
 ## Analysis of Stationarity
-In order to see if the series is stationary, we will employ both informal and formal tests. Immediately, by looking at the plot above (reference later), the series does not look stationary, since the mean of the process looks to change quite severely with time. Some more informal tests are done. The function of autocorrelation and partial autocorrelation (empirical) for the series are plotted below. 
+In order to see if the series is stationary, we will employ both informal and formal tests. Immediately, by looking at the plot above (reference later), the series does not look stationary, since the mean of the process looks to change quite dramatically with time. Some more informal tests are done. The function of autocorrelation and partial autocorrelation (empirical) for the series are plotted below. 
 
 ```{r}
 par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1) 
@@ -87,11 +88,13 @@ acf(ixic,ylim=c(-1,1),main="ixic")
 pacf(ixic,ylim=c(-1,1),main="ixic")
 ```
 
-As is seen from the function of autocorrelation (ACF), the "terms" decrease slowly. This suggests that the time series is non-stationary, since a stationary series would show exponentially decreasing "terms" in the ACF. 
+As is seen from the function of autocorrelation (ACF), the coefficients decrease slowly. This suggests that the time series is non-stationary, since a stationary series would show exponentially decreasing coefficients in the ACF. 
 
 SJEKK AT ALT DETTE GIR MENING (OG BRUKER KORREKTE BEGREPER) SENERE! (TIL SLUTT)
 
-Next, some Ljung-Box tests are done. 
+Next, some Ljung-Box tests are done. Here we are testing the joint hypothesis that all $m$ of the correlation coefficients are simultaneously equal to zero. Below we are testing for $m \in \{1, 5, 10, 15, 20\}$. 
+
+MAKE A SUMMARY-TABLE HERE INSTEAD LATER! JUST SHOW THE LAGS AND THE P-VALUES.
 
 ```{r}
 Box.test(ixic, lag = 1, type = c("Ljung-Box"))
@@ -101,120 +104,197 @@ Box.test(ixic, lag = 15, type = c("Ljung-Box"))
 Box.test(ixic, lag = 20, type = c("Ljung-Box"))
 ```
 
-All the p-values from the Ljung-Box tests shown are low, which further suggests that the series is non-stationary WHY?
+All the $p$-values from the Ljung-Box tests are low, which means that we would reject the null hypothesis that all $m$ correlation coefficients are simultaneously equal to zero. This further suggests that the series is non-stationary.
 
-Next, some formal tests are done to check stationarity of the series. 
+Next, some formal tests are done to check stationarity of the series. First, the Augmented-Dickey-Fuller (ADF) unit root test is done. The null hypothesis for this case states that the series is integrated of order 1, i.e. that it is non-stationary. Below, the ADF test is done assuming both a stochastic and deterministic trend in the data. The maximum number of lags considered are 20 and the number of lags used are chosen by BIC. 
 
-```{r, eval = F}
-#ADF= funci?n general: ur.df(x, type = c("none", "drift", "trend"), lags = 1, selectlags = c("Fixed", "AIC", "BIC"))  
-# Lag selection can be achieved according to the Akaike "AIC" or the Bayes "BIC" information criteria. The maximum number of lags considered is set by lags.
-# The default is to use a "fixed" lag length set by lags
-# If type is set to "none" neither an intercept nor a trend is included in the test regression. If it is set to "drift" an intercept is added
-# and if it is set to "trend" both an intercept and a trend is added
-
-#series de precios
-
-#CON CONSTANTE Y BIC
-ibex35.df<-ur.df(ibex35, type = c("drift"), lags=20, selectlags = c("BIC"))
-summary(ibex35.df)	
-# Residual plot, acfs' and pacfs'.
-plot(ibex35.df)
-
-#CON CONSTANTE Y AIC
-ibex35.df<-ur.df(ibex35, type = c("drift"), lags=20, selectlags = c("AIC"))
-summary(ibex35.df)	
-
-#Con CONSTANTE Y 2 LAGS
-ibex35.df<-ur.df(ibex35, type = c("drift"), lags=2)
-summary(ibex35.df)	
-# Residual plot, acfs' and pacfs'.
-plot(ibex35.df)
-
-
-#CON TENDENCIA
-ibex35.df<-ur.df(ibex35, type = c("trend"), lags=2)
-summary(ibex35.df)
-
-
-#series de rendimientos
-rendibex=diff(log(ibex35))
-plot(rendibex)
-rendibex<-rendibex[-1] #eliminamos la primera observaci?n que ahora es NA porque si no, el contraste da un error
-
-
-rendibex.df<-ur.df(rendibex, type = c("none"), lags=20, selectlags = c("BIC"))
-summary(rendibex.df)	
-
-
-# Residual plot, acfs' and pacfs'.
-plot(rendibex.df)
-
-
-
-#PP= funci?n general: ur.pp(x, type = c("Z-alpha", "Z-tau"), model = c("constant", "trend"), lags = c("short", "long"), use.lag = NULL) # use.lag=NULL es para especificar el lag
-# los resultados no cambian si se usa Z-alpha o Z-thau o short o long
-# ojo!!!! los valores cr?ticos son los tabulados por mackinnon que coinciden con los del ADF test (Z-tau los da pero Z-alpha no los da)  
-# lags="short" sets the number of lags to (4*(n/100))^(1/4), whereas lags="long" sets the number of lags to (12*(n/100))^(1/4). 
-
-#series de precios
-
-ibex35.pp<-ur.pp(ibex35, type = c("Z-tau"), model = c("constant"), lags = c("long"))
-summary(ibex35.pp)	
-
-ibex35.pp<-ur.pp(ibex35, type = c("Z-tau"), model = c("trend"), lags = c("short"))
-summary(ibex35.pp)
-
-#series de rendimientos
-
-rendibex.pp<-ur.pp(rendibex, type = c("Z-tau"), model = c("constant"), lags = c("short"))
-summary(rendibex.pp)	
-
-
-
-#KPSS test= funci?n general: ur.kpss(y, type = c("mu", "tau"), lags = c("short", "long", "nil"), use.lag = NULL) #The test types specify
-#as deterministic component either a constant "mu" or a constant with linear trend "tau".If lags="nil" is choosen, then no error correction is made. Furthermore,
-#one can specify a different number of maximum lags by setting use.lag accordingly.
-
-#series de precios
-
-ibex35.kpss<-ur.kpss(ibex35, type = c("mu"), lags = c("short"))
-summary(ibex35.kpss)
-
-#series de rendimientos
-
-# This is for checking that the returns are I(0), i.e. that the series is I(0)
-# Check if this makes sense with IXIC later!
-
-rendibex.kpss<-ur.kpss(rendibex, type = c("mu"), lags = c("short"))
-summary(rendibex.kpss)
+```{r}
+ixic.df<-ur.df(ixic, type = c("trend"), lags=20, selectlags = c("BIC"))
+summary(ixic.df)	
 ```
 
+From the output it is apparent that BIC chooses 9 lags in the DF test. Moreover, the value of the test-statistic clearly suggests that we cannot reject the null-hypothesis, since the value is much larger than the critical values for this left-sided test. Thus, we would conclude that the series is non-stationary. Note that the test leads to the same conclusion when assuming no trends and when assuming only a drift. Moreover, the same amount of lags are chosen for all three variants. Below, the residuals and the autocorrelation functions of the residuals are plotted, in order to check if the number of lags chosen via BIC is satisfactory. 
 
+```{r}
+plot(ixic.df)
+```
 
+The autocorrelation function of the residuals has no significant coefficients, which leads us to conclude that the amount of lags chosen via BIC is satisfactory. 
+
+Next, we check if the returns (rendimientos) are stationary. Below we calculate the returns and remove the first difference, since it is not a numerical value. 
 
 ```{r}
 rendixic <- diff(log(ixic))
 rendixic <- rendixic[-1] # The first difference is NA, needs to be removed. 
 ```
 
-```{r, echo = F}
+```{r}
 plot(rendixic)
 ```
 
+Then, the ADF test is calculated without trends, since there does not look to be any trends in the plot of the returns. Note that, as earlier, the conclusion of the test and the amount of lags that are chosen via BIC are the same when assuming a drift or both types of trends.
 
-## Basic Statistical Properties
+```{r}
+rendixic.df<-ur.df(rendixic, type = c("none"), lags=20, selectlags = c("BIC"))
+summary(rendixic.df)	
+```
+
+It is apparent that 8 lags are chosen. Moreover, from the test-statistic above we would reject the null-hypothesis, which means that we have found evidence against the hypothesis that the returns are $I(1)$, i.e. evidence against the hypothesis that the original series is $I(0)$. Thus, we conclude that the returns are $I(0)$ or the original series is $I(1)$. This means that, through the results from this test, the original series is not stationary (which we have seen earlier), but the returns are stationary and can be used further in the analysis. SJEKK AT DET JEG SKRIVER HER STEMMER, TROR DET GJØR DET! HAR NOEN NOTATER FRA ET EKSEMPEL PÅ TAVLA PÅ DETTE!
+
+As earlier, the plot below shows that the amount of lags for the ADF test chosen via BIC is satisfactory. 
+
+```{r}
+plot(rendixic.df)
+```
+
+For completeness, we also use the Philips-Perron (PP) test to check stationarity of the series. This test defines the same null-hypothesis as the ADF test, which means that this is a left-tailed test as well. 
+COULD MAKE A TABLE FROM THESE TWO LAST TESTS (WITH THE MOST IMPORTANT STATISTICS), TO SAVE SOME ROOM IF NEEDED, SINCE THE CONCLUSIONS ARE THE SAME AS EARLIER (AS EXPECTED).
+
+```{r}
+ixic.pp<-ur.pp(ixic, type = c("Z-tau"), model = c("trend"), lags = c("long"))
+summary(ixic.pp)	
+```
+
+All combinations of trend assumptions and/or long or short lags yield the same conclusions as from the output above; namely that we have not found sufficient evidence to reject the null-hypothesis of non-stationarity of the series. Below the PP-test is done with the returns. 
+```{r}
+rendixic.pp<-ur.pp(rendixic, type = c("Z-tau"), model = c("constant"), lags = c("short"))
+summary(rendixic.pp)	
+```
+
+When referring to the returns, the conclusion is the same as for the ADF test; the returns are stationary while the original series is not. 
+
+Finally, we use the KPSS test to check stationarity of the series. The null hypothesis for this test states that the series is stationary. In the test below we have chosen to assume the deterministic component as a constant with a linear trend, and we have used short lags. Note that the conclusion is the same with all different variations of assumptions for the test. 
+
+```{r}
+ixic.kpss<-ur.kpss(ixic, type = c("tau"), lags = c("short"))
+summary(ixic.kpss)
+```
+
+Since this is a right-tailed test, the test-statistic is clearly sufficiently large to reject the null-hypothesis to the lowest significance level shown (0.01). Thus, we conclude that the series is non-stationary, as expected. The test below shows that the returns are stationary, in line with what we have concluded earlier, since we cannot find strong evidence against the null-hypothesis. 
+
+```{r}
+rendixic.kpss <- ur.kpss(rendixic, type = c("mu"), lags = c("short"))
+summary(rendixic.kpss)
+```
+
+Conclusively, the original time series is not stationary, but the returns are stationary, which means that the returns will be used in the following analysis. We can be relatively certain that this is the case, since all three formal tests, as well as the informal tests, point to this conclusion. 
+
+## Basic Statistical Properties of the Stationary Series
+
+Some basic statistical properties of the stationary series, the returns, are shown below. 
 
 ```{r}
 basicStats(rendixic)
 ```
 
 ```{r, echo = F}
-hist(rendixic,breaks=20,freq=F, main = 'Histogram of the Returns')
+hist(rendixic,breaks=100,freq=F, main = 'Histogram of the Returns')
 curve(dnorm(x, mean=mean(rendixic), sd=sd(rendixic)), col=2, add=T)
 ```
 
-We can see that the series is Leptokurtic, both by the kurtosis value and from the histogram above. The red curve above is a Gaussian distribution with empirical mean and standard error according to the returns of the NASDAQ Composite series. 
+We can see that the series is Leptokurtic, both by the kurtosis value and from the histogram above. The superposed red curve is a Gaussian distribution with empirical mean and standard error according to the returns of the NASDAQ Composite series. Moreover, the skewness is negative, which means that the distribution of the returns are heavy-tailed in the left tail. This is also apparent from the histogram above. 
 
+## Identification, Estimation and Diagnostics of a Model for the Mean
+
+Plotting the autocorrelation functions of the returns. 
+
+```{r}
+par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
+acf(rendixic,ylim=c(-1,1),main="rendixic")
+pacf(rendixic,ylim=c(-1,1),main="rendixic")
+```
+
+It looks like both the ACF and the partial ACF (PACF) have 9 significant coefficients. This seems like a large order of ARMA-model to estimate, so I will try with smaller models instead. Note that the third coefficient of both ACF and PACF seems to be non-significant, which might be a hint to what order of model would be fitting. The table below shows the BIC and the AIC for different orders of ARMA-models. 
+
+```{r, echo = F, results='hide'}
+#ar(1)
+model = arima(rendixic, order = c(1,0,0),include.mean = TRUE)
+model$aic
+BIC(model)
+pnorm(c(abs(model$coef)/sqrt(diag(model$var.coef))), mean=0, sd=1, lower.tail=FALSE)
+
+#ma(1)
+model2 = arima(rendixic, order = c(0,0,1),include.mean = TRUE)
+model2 
+pnorm(c(abs(model2$coef)/sqrt(diag(model2$var.coef))), mean=0, sd=1, lower.tail=FALSE)
+
+#arma(1,1) 
+model3 = arima(rendixic, order = c(1,0,1),include.mean = TRUE)
+model3 
+pnorm(c(abs(model3$coef)/sqrt(diag(model3$var.coef))), mean=0, sd=1, lower.tail=FALSE)
+
+#ar(2) 
+model4 = arima(rendixic, order = c(2,0,0),include.mean = TRUE)
+model4 
+pnorm(c(abs(model4$coef)/sqrt(diag(model4$var.coef))), mean=0, sd=1, lower.tail=FALSE)
+
+#MA(2) 
+model5 = arima(rendixic, order = c(0,0,2),include.mean = TRUE)
+model5 
+pnorm(c(abs(model5$coef)/sqrt(diag(model5$var.coef))), mean=0, sd=1, lower.tail=FALSE)
+
+#arma(2,2)
+model6 <- arima(rendixic, order = c(2,0,2),include.mean = TRUE)
+model6
+pnorm(c(abs(model6$coef)/sqrt(diag(model6$var.coef))), mean=0, sd=1, lower.tail=FALSE)
+
+#AR(3)
+model7 <- arima(rendixic, order = c(3,0,0),include.mean = TRUE)
+model7
+pnorm(c(abs(model7$coef)/sqrt(diag(model7$var.coef))), mean=0, sd=1, lower.tail=FALSE)
+# Hva betyr p-verdier på 0e+00???
+
+#MA(3)
+model8 <- arima(rendixic, order = c(0,0,3),include.mean = TRUE)
+model8
+pnorm(c(abs(model8$coef)/sqrt(diag(model8$var.coef))), mean=0, sd=1, lower.tail=FALSE)
+```
+
+```{r, echo = F}
+models <- c("AR(1)", "MA(1)", "ARMA(1,1)", "AR(2)", "MA(2)", "ARMA(2,2)", "AR(3)", "MA(3)") 
+bics <- c(model$aic, model2$aic, model3$aic, model4$aic, model5$aic, model6$aic, model7$aic, model8$aic)
+aics <- c(BIC(model), BIC(model2), BIC(model3), BIC(model4), BIC(model5), BIC(model6), BIC(model7), BIC(model8))
+df.arma <- cbind("Model" = models, "BIC" = bics, "AIC" = aics)
+knitr::kable(df.arma, caption = "AIC and BIC of different estimated models for the returns of NASDAQ Composite")
+```
+
+HVA BETYR P-VERDIER PÅ 0.000e+00? DETTE FÅR JEG FOR ARMA(2,2)!! SE NEDENFOR!
+
+The table above clearly shows that ARMA(2,2) yields the lowest AIC and BIC. Moreover, the estimated coefficients of the model are significant to a level of $0.05$. SIKKER!?!? The estimated model is shown below
+
+```{r}
+mean.model <- arima(rendixic, order = c(2,0,2),include.mean = TRUE)
+mean.model
+pnorm(c(abs(mean.model$coef)/sqrt(diag(mean.model$var.coef))), mean=0, sd=1, lower.tail=FALSE)
+```
+
+Some model diagnostics follow. We must check if the model is stationary. 
+
+```{r}
+plot(mean.model)
+plot(model3) # Or just use model3, because of parsimony? The AIC is much larger though. 
+```
+
+The inverse roots of the characteristic polynomial of AR and MA are shows above. DO WE WANT ALL OF THE INVERSE ROOTS TO FALL INSIDE, FOR BOTH THE AR AND THE MA PROCESS? If so, this model is clearly stationary. 
+
+The residuals of the model are analyzed below. 
+
+```{r}
+tsdiag(mean.model)
+tsdiag(model3) # Or just use model3, because of parsimony?
+```
+
+No significant coefficients in the autocorrelation functions above, which suggests that the level of the model is ok. DÅRLIG SKREVET OG MANGLENDE FORKLARING. 
+
+```{r}
+par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
+acf(mean.model$residuals,ylim=c(-1,1),main="residuals, arma(2,2)") #vemos que solo el 10 es significativo
+pacf(mean.model$residuals,ylim=c(-1,1),main="residuals, arma(2,2)")
+```
+
+No significant coefficients in the autocorrelation functions above. 
+
+## Identification, Estimation and Diagnostics of a Model for the Variance
 
 
 # Conclusions 
