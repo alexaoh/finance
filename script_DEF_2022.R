@@ -623,9 +623,13 @@ plot(dcc.fit3)
 # Make a plot selection (or 0 to exit): 
 #   
 # 1:   Conditional Mean (vs Realized Returns)
-# 2:   Conditional Sigma (vs Realized Absolute Returns)
+# 2:   Conditional Sigma (vs Realized Absolute Returns) THIS IS INTERESTING TO LOOK AT
+# IN THE PLOT: WE WANT TO SEE THAT THE BEHAVIOUR IS SIMILAR, CANNOT LOOK AT THE ABSOLUTE VALUES (SIZES).
+# Blue: Std estimated from the model.
+# Grey: Rendimientos absolute value (unbiased estimator of A QUANTITY WHICH I CANNOT REMEMBER (probably the standard deviation))
 # 3:   Conditional Covariance
-# 4:   Conditional Correlation
+# 4:   Conditional Correlation  THIS IS INTERESTING TO LOOK AT
+# IN THE PLOT: Estimated correlation from the model. 
 # 5:   EW Portfolio Plot with conditional density VaR limits
 
 
