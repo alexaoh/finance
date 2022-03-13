@@ -31,6 +31,7 @@ library(quantmod)
 library(fBasics)
 library(urca)
 library(forecast)
+library(rugarch)
 ```
 
 # Abstract
@@ -275,26 +276,175 @@ plot(mean.model)
 plot(model3) # Or just use model3, because of parsimony? The AIC is much larger though. 
 ```
 
-The inverse roots of the characteristic polynomial of AR and MA are shows above. DO WE WANT ALL OF THE INVERSE ROOTS TO FALL INSIDE, FOR BOTH THE AR AND THE MA PROCESS? If so, this model is clearly stationary. 
+The inverse roots of the characteristic polynomial of AR and MA are shows above. DO WE WANT ALL OF THE INVERSE ROOTS TO FALL INSIDE, FOR BOTH THE AR AND THE MA PROCESS? The stationarity condition for the AR-process is satisfied, since the roots have absolute values greater than one. Moreover, the invertibility condition holds for the MA process, since the roots of this process also have absolute values greater than one. Thus, the model is stationary. 
 
 The residuals of the model are analyzed below. 
 
 ```{r}
+# Denne kodeblokken trengs kanskje ikke?
 tsdiag(mean.model)
 tsdiag(model3) # Or just use model3, because of parsimony?
 ```
 
-No significant coefficients in the autocorrelation functions above, which suggests that the level of the model is ok. DÅRLIG SKREVET OG MANGLENDE FORKLARING. 
+There are no significant coefficients in the autocorrelation function above, which suggests that the model has adequately captured the information in the data. Moreover, the Ljung-Box statistic p-values are all relatively large, which means that we will not reject the Ljung-Box null hypothesis that all $m$ of the correlation coefficients are simultaneously equal to zero. Thus, this further suggests that the residuals are not correlated and we have found a model that seems reasonable in this regard. 
 
 ```{r}
 par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
-acf(mean.model$residuals,ylim=c(-1,1),main="residuals, arma(2,2)") #vemos que solo el 10 es significativo
+acf(mean.model$residuals,ylim=c(-1,1),main="residuals, arma(2,2)")
 pacf(mean.model$residuals,ylim=c(-1,1),main="residuals, arma(2,2)")
 ```
 
-No significant coefficients in the autocorrelation functions above. 
+The same conclusion is made from the ACF and PACF plotted above. 
+
+```{r}
+qqnorm(mean.model$residuals)
+qqline(mean.model$residuals, datax = FALSE)
+
+
+plot(mean.model$residuals)
+title (main="Residuals")
+normalTest(mean.model$residuals,method="jb")
+```
+
+A QQ-plot of the residuals is plotted below, followed by the residuals (not standardized) are plotted above. It is apparent that the residuals have heavy tails. It is not reasonable to assume normality of the residuals, an argument that the Jarque-Bera Normality test further substantiates because its null hypothesis of normality is rejected following the very small p-value. 
 
 ## Identification, Estimation and Diagnostics of a Model for the Variance
+
+HVA ER KODEN / METODEN NEDENFOR GODT FOR? VIRKER SOM OM DETTE BLIR BRUKT I "IDENTIFICACION" AV GARCH MODELL, MEN HVORDAN?
+
+```{r}
+residuals <- mean.model$residuals
+residuals2 <- residuals^2
+
+par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
+acf(residuals2,ylim=c(-1,1),main="Squared Residuals") 
+pacf(residuals2,ylim=c(-1,1),main="Squared Residuals")
+
+# Har acf ovenfor noe sammenheng med plottet nedenfor (se slides 33++ i Volatility Models)?
+# For de ser veldig like ut. Men vet ikke helt om residuals^2 fra modellen har noe med dette å gjøre?
+# Mulig det er fordi vi estimerer mean vha ARMA-modellen og trekker den fra + kvadrat, noe vi egt gjør direkte fra serien nedenfor!?
+acf((rendixic-mean(rendixic))^2, ylim = c(-1,1))
+
+Box.test(residuals2,lag=1,type='Ljung')
+Box.test(residuals2,lag=5,type='Ljung')
+Box.test(residuals2,lag=15,type='Ljung')
+```
+
+The Ljung-Box tests above lead to a conclusion that the squared residuals are correlated. 
+
+Now over to estimation of GARCH models for the variance of the returns. First we estimate a ARMA(2,2)-GARCH(1,1) with a t-student distribution. WHY CHOSE A T-STUDENT OVER A NORMAL (OR VICE VERSA)?
+
+```{r}
+spec1 <- ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(1,1)), mean.model=list(armaOrder=c(2,2)), distribution.model = "std")
+(m <- ugarchfit(spec = spec1, data = rendixic))
+```
+
+We observe that all the parameter estimates are significant to a 5\% significance level. Moreover, we note that the condition of positivity holds, because $\hat{\alpha}_1 > 0$ and $\hat{\beta}_1$, where we follow the standard statistical notation of a hat indicating an estimate. Also, we note that the condition of stationarity holds, because $\hat{\alpha}_1 + \hat{\beta}_1 < 1$. 
+
+```{r}
+#plot(m) # Vet ikke om denne er noe interessant?
+```
+
+Estimated volatilities. 
+
+```{r}
+head(v <- sigma(m)) # Estimated volatility.
+head(v_anualized <- (250)^0.5*v) # Anualized estimated volatility. .
+plot(v_anualized)
+```
+
+```{r}
+par(mfcol=c(2,1))  # Show volatility and returns simultaneously.
+plot(v_anualized)
+plot(rendixic) 
+```
+
+The residuals of the model are found SURELY SOME RESIDUAL ANALYSIS IS NECESSARY FOR THESE MODELS AS WELL?
+
+```{r}
+resi <- residuals(m,standardize=T) # Standardized residuals
+par(mfcol=c(2,1)) # Obtain ACF & PACF
+acf(resi,lag=24)
+acf(resi^2,lag=24)
+```
+
+There is nothing significant in the plots above.
+
+Next we will fit a ARMA(2,2)-GJR-GARCH(1,1) model, assuming a t-distribution. WHY DO THIS?
+
+```{r}
+spec2 <- ugarchspec(variance.model=list(model="gjrGARCH", garchOrder = c(1,1)), mean.model=list(armaOrder=c(2,2)), distribution.model = "std")
+(mgjr <- ugarchfit(spec = spec2, data = rendixic))
+#plot(mgjr)
+```
+
+Still, the parameter estimates are significant (except for `omega`). The positivity and the stationarity conditions also hold here, since all the parameter estimates are positive THIS SEEMS TO BE FALSE SINCE alpha is 0! and $\hat{\alpha}_1 + \hat{\beta}_1 + \frac12 \hat{\gamma} \approx$ `r round(0.823974 + 0.5*0.260477, 3)` $<1$.
+
+Residuals. 
+
+```{r}
+resigjr <- residuals(mgjr,standardize=T) # Standardized residuals
+par(mfcol=c(2,1)) # Obtain ACF & PACF
+acf(resigjr,lag=24)
+acf(resigjr^2,lag=24)
+```
+
+There is nothing significant in the plots above.
+
+```{r}
+vgjr <- sigma(mgjr) # Estimated volatility. 
+vgjr_anualized <- (250)^0.5*vgjr
+par(mfcol=c(2,1))
+plot(vgjr_anualized)
+plot(rendixic) 
+```
+
+Next, we will fit an ARMA(2,2)-L-GARCH 
+NOT SURE HOW TO DO THIS YET. 
+
+# Grafic and Interpretation of the Estimated Series of Volatility
+
+TAKE THIS FROM THE MODEL CHOSEN ABOVE. FOR NOW HAVE TAKEN THE ONE FROM THE FIRST MODEL (GARCH(1,1))
+
+```{r}
+par(mfcol=c(2,1))  # Show volatility and returns simultaneously.
+plot(v_anualized)
+plot(rendixic) 
+```
+
+Comparison of the estimated volatilities and the absolute value of the returns. 
+
+```{r}
+returnsabs <- abs(rendixic)
+par(mfcol=c(3,1))  # Show volatility and returns
+plot(v_anualized)
+plot(vgjr_anualized)
+plot(returnsabs) 
+```
+
+They all seem to follow a similar pattern, which is a good sign, even though we cannot compare the absolute values of the data shown in the plots. 
+
+```{r}
+time <-  data.frame(returnsabs, v)
+ts.plot(time,gpars= list(xlab="time", ylab=",", col = 1:ncol(time)))
+legend("topleft", c("returnsabs","v"), lty=c(1,1), col=c("black","red"), cex=0.6)
+```
+
+# Grafic and Interpretation of the News Impact Curve
+
+```{r}
+par(mfrow=c(2,1))
+ni <- newsimpact(z = NULL, m)
+plot(ni$zx, ni$zy, ylab=ni$yexpr, xlab=ni$xexpr, type="l", main = "News Impact Curve")
+ni2 <- newsimpact(z = NULL, mgjr)
+plot(ni2$zx, ni2$zy, ylab=ni2$yexpr, xlab=ni2$xexpr, type="l", main = "News Impact Curve")
+```
+
+INTERPRETATIONS?!
+
+# Volatility Predictions and Interpretations
+
+
 
 
 # Conclusions 

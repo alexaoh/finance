@@ -2,31 +2,31 @@
 #Instalaci?n de packages y libraries# 
 #####################################
 
-install.packages("tseries")  
+#install.packages("tseries")  
 library(tseries)
 
-install.packages("fBasics")  
+#install.packages("fBasics")  
 library(fBasics)
 
-install.packages("car")  
+#install.packages("car")  
 library(car)
 
-install.packages("urca")  
+#install.packages("urca")  
 library(urca)
 
-install.packages("forecast")  
+#install.packages("forecast")  
 library(forecast)
 
-install.packages("fGarch")
+#install.packages("fGarch")
 library(fGarch)
 
-install.packages("rugarch")  
+#install.packages("rugarch")  
 library(rugarch)
 
-install.packages("quantmod")  #Este package es para importar los datos directamente de Yahho finance
+#install.packages("quantmod")  #Este package es para importar los datos directamente de Yahho finance
 library(quantmod)
 
-install.packages("ggplot2") #para la estacionariedad de los modelos de la media
+#install.packages("ggplot2") #para la estacionariedad de los modelos de la media
 library(ggplot2)
 
 
