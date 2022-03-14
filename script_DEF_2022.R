@@ -368,11 +368,19 @@ spec1=ugarchspec(variance.model=list(model="gjrGARCH", garchOrder = c(1,1)), mea
 m10=ugarchfit(spec=spec1,data=rendibex)
 m10
 
+# COMMENTS FROM CLASS: Look at the information criteria (Akaika, Bayes, etc) in order to choose one model over others. 
+# Should also look at the residuals, which are given in the output from the model as well. 
+# p-values of Ljung-Box Test on standardized residuals larger than 0.05 --> not autocorrelation in the residuals. 
+# Could also look at the squared residuals. 
+# The residuals should not present autocorrelation --> if they do; we have left something in the data unmodelized. If they are 
+# uncorrelated we seem to have modelled the data in a good way. 
+
 # alternativa rugarch, distribuci?n student, este es el mejor
 spec1=ugarchspec(variance.model=list(model="gjrGARCH", garchOrder = c(1,1)), mean.model=list(armaOrder=c(1,0)), distribution.model = "std")
 m11=ugarchfit(spec=spec1,data=rendibex)
 m11
 plot(m11)
+# 10 or 11: We do not want them to be autocorrelated, since we want to model the signal and not the white noise in the time series. 
 
 #obtenci?n de los residuos
 resi=residuals(m11,standardize=T) # Standardized residuals

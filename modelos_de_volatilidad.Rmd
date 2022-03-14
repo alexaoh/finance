@@ -4,13 +4,13 @@ subtitle: "Trabajo Final - Modelos de Volatilidad - Financial Statistics"
 author: "Alexander J Ohrt"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
-  # html_document:
-  #   code_folding: show
-  #   toc: true
-  #   toc_depth: 3
-  #   theme: readable
-  #   highlight: textmate
-  #   number_sections: true
+  html_document:
+    code_folding: show
+    toc: true
+    toc_depth: 3
+    theme: readable
+    highlight: textmate
+    number_sections: true
   pdf_document:
     fig_caption: true
     number_sections: true
@@ -310,7 +310,7 @@ A QQ-plot of the residuals is plotted below, followed by the residuals (not stan
 
 ## Identification, Estimation and Diagnostics of a Model for the Variance
 
-HVA ER KODEN / METODEN NEDENFOR GODT FOR? VIRKER SOM OM DETTE BLIR BRUKT I "IDENTIFICACION" AV GARCH MODELL, MEN HVORDAN?
+First we test for ARCH effects using the residuals of the mean model. 
 
 ```{r}
 residuals <- mean.model$residuals
@@ -319,7 +319,7 @@ residuals2 <- residuals^2
 par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
 acf(residuals2,ylim=c(-1,1),main="Squared Residuals") 
 pacf(residuals2,ylim=c(-1,1),main="Squared Residuals")
-
+par(mfrow=c(1,1))
 # Har acf ovenfor noe sammenheng med plottet nedenfor (se slides 33++ i Volatility Models)?
 # For de ser veldig like ut. Men vet ikke helt om residuals^2 fra modellen har noe med dette å gjøre?
 # Mulig det er fordi vi estimerer mean vha ARMA-modellen og trekker den fra + kvadrat, noe vi egt gjør direkte fra serien nedenfor!?
@@ -330,101 +330,121 @@ Box.test(residuals2,lag=5,type='Ljung')
 Box.test(residuals2,lag=15,type='Ljung')
 ```
 
-The Ljung-Box tests above lead to a conclusion that the squared residuals are correlated. 
+As seen in the ACF and PACF of the squared residuals, they are clearly presenting autocorrelation, i.e. there are ARCH effects present. This argument is further substantiated by the Ljung-Box tests above, since they lead to the conclusion that the squared residuals are correlated. Thus, it is relevant to identify and estimate a model for the volatility. Joint estimation of the mean and volatility equations, for different types of models, is done in the following. 
 
 Now over to estimation of GARCH models for the variance of the returns. First we estimate a ARMA(2,2)-GARCH(1,1) with a t-student distribution. WHY CHOSE A T-STUDENT OVER A NORMAL (OR VICE VERSA)?
 
 ```{r}
 spec1 <- ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(1,1)), mean.model=list(armaOrder=c(2,2)), distribution.model = "std")
 (m <- ugarchfit(spec = spec1, data = rendixic))
+m.AIC <- -6.4605
 ```
 
-We observe that all the parameter estimates are significant to a 5\% significance level. Moreover, we note that the condition of positivity holds, because $\hat{\alpha}_1 > 0$ and $\hat{\beta}_1$, where we follow the standard statistical notation of a hat indicating an estimate. Also, we note that the condition of stationarity holds, because $\hat{\alpha}_1 + \hat{\beta}_1 < 1$. 
+We observe that all the parameter estimates are significant to a 5\% significance level. Moreover, we note that the condition of positivity holds, because $\hat{\alpha}_1 > 0$ and $\hat{\beta}_1$, where we follow the standard statistical notation of a hat indicating an estimate. Also, we note that the condition of stationarity holds, because $\hat{\alpha}_1 + \hat{\beta}_1 < 1$. We record the AIC of this first model in order to compare to other models later. The residual plots below show that the residuals do not present any autocorrelation (before moving to around 15 lags, which is a large number of lags), which indicates that this model has modeled the data in a sufficient or reasonable way. However, note that the p-values of the `Weighted Ljung-Box Test on Residuals` are large, which means we cannot reject the null hypothesis of no serial correlation for the different lags. We will keep this is mind as a downfall of this first proposed model. 
 
 ```{r}
-#plot(m) # Vet ikke om denne er noe interessant?
+par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
+plot(m, which = 10)
+plot(m, which = 11)
 ```
 
-Estimated volatilities. 
+<!-- The estimated volatilities from this first model, together with the returns, are shown in the plots below. The general behaviour seems to match relatively well, i.e. the movements in the two plots coincide relatively well.  -->
+
+<!-- ```{r} -->
+<!-- par(mfcol=c(2,1))  # Show volatility and returns simultaneously. -->
+<!-- plot(v_anualized) -->
+<!-- plot(rendixic)  -->
+<!-- ``` -->
+
+Next we will fit a ARMA(2,2)-GJR-GARCH(1,1) model, assuming a t-distribution. 
 
 ```{r}
-head(v <- sigma(m)) # Estimated volatility.
-head(v_anualized <- (250)^0.5*v) # Anualized estimated volatility. .
-plot(v_anualized)
+spec.mgjr <- ugarchspec(variance.model=list(model="gjrGARCH", garchOrder = c(1,1)), mean.model=list(armaOrder=c(2,2)), distribution.model = "std")
+(mgjr <- ugarchfit(spec = spec.mgjr, data = rendixic))
 ```
 
-```{r}
-par(mfcol=c(2,1))  # Show volatility and returns simultaneously.
-plot(v_anualized)
-plot(rendixic) 
-```
+Still, the parameter estimates are significant (except for `omega`). The stationarity conditions holds, since $\hat{\alpha}_1 + \hat{\beta}_1 + \frac12 \hat{\gamma} \approx$ `r round(0.823974 + 0.5*0.260477, 3)` $<1$. However, the positivity condition does not seem to hold, since $\hat{\alpha} = 0 \ngeq 0$. Thus, the GJR-GARCH based model cannot be used, even though the AIC is lower and the residuals do not present any autocorrelation according to plots. 
 
-The residuals of the model are found SURELY SOME RESIDUAL ANALYSIS IS NECESSARY FOR THESE MODELS AS WELL?
+<!-- The residuals for the second model are plotted below.  -->
 
-```{r}
-resi <- residuals(m,standardize=T) # Standardized residuals
-par(mfcol=c(2,1)) # Obtain ACF & PACF
-acf(resi,lag=24)
-acf(resi^2,lag=24)
-```
+<!-- ```{r} -->
+<!-- par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1) -->
+<!-- plot(mgjr, which = 10) -->
+<!-- plot(mgjr, which = 11) -->
+<!-- ``` -->
 
-There is nothing significant in the plots above.
 
-Next we will fit a ARMA(2,2)-GJR-GARCH(1,1) model, assuming a t-distribution. WHY DO THIS?
-
-```{r}
-spec2 <- ugarchspec(variance.model=list(model="gjrGARCH", garchOrder = c(1,1)), mean.model=list(armaOrder=c(2,2)), distribution.model = "std")
-(mgjr <- ugarchfit(spec = spec2, data = rendixic))
-#plot(mgjr)
-```
-
-Still, the parameter estimates are significant (except for `omega`). The positivity and the stationarity conditions also hold here, since all the parameter estimates are positive THIS SEEMS TO BE FALSE SINCE alpha is 0! and $\hat{\alpha}_1 + \hat{\beta}_1 + \frac12 \hat{\gamma} \approx$ `r round(0.823974 + 0.5*0.260477, 3)` $<1$.
-
-Residuals. 
-
-```{r}
-resigjr <- residuals(mgjr,standardize=T) # Standardized residuals
-par(mfcol=c(2,1)) # Obtain ACF & PACF
-acf(resigjr,lag=24)
-acf(resigjr^2,lag=24)
-```
-
-There is nothing significant in the plots above.
-
-```{r}
-vgjr <- sigma(mgjr) # Estimated volatility. 
-vgjr_anualized <- (250)^0.5*vgjr
-par(mfcol=c(2,1))
-plot(vgjr_anualized)
-plot(rendixic) 
-```
+<!-- ```{r} -->
+<!-- vgjr <- sigma(mgjr) # Estimated volatility.  -->
+<!-- vgjr_anualized <- (250)^0.5*vgjr -->
+<!-- par(mfcol=c(2,1)) -->
+<!-- plot(vgjr_anualized) -->
+<!-- plot(rendixic)  -->
+<!-- ``` -->
 
 Next, we will fit an ARMA(2,2)-L-GARCH 
-NOT SURE HOW TO DO THIS YET. 
+NOT SURE HOW TO DO THIS YET. DOES NOT LOOK LIKE IT IS IMPLEMENTED!
+
+Next, we will fit an ARMA(2,2)-EGARCH model. All parameters are significant in the model. 
+ 
+```{r}
+spec.egarch <- ugarchspec(variance.model = list(model="eGARCH", garchOrder = c(1,1)), mean.model = list(armaOrder=c(2,2)), distribution.model = "std")
+(m.egarch <- ugarchfit(spec = spec.egarch, data = rendixic))
+m.egarch.AIC <- -6.4958
+```
+
+The residual plots below look good. Moreover, the AIC is smaller for this model compared to the first proposed model. Thus, I would prefer this model over the first model. 
+
+```{r}
+par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
+plot(m.egarch, which = 10)
+plot(m.egarch, which = 11)
+```
+
+```{r}
+spec.igarch <- ugarchspec(variance.model=list(model="iGARCH", garchOrder = c(1,1)), mean.model=list(armaOrder=c(2,2)), distribution.model = "std")
+(m.igarch <- ugarchfit(spec=spec.igarch,data=rendixic))
+m.igarch.AIC <- -6.4602
+```
+
+The residuals for the iGARCH look alright, but the AIC is lower for this model compared to the first proposed model. 
+
+```{r}
+par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
+plot(m.igarch, which = 10)
+plot(m.igarch, which = 11)
+```
+
+Thus, I would conclude that the best model out of the three fitted is the first one. 
 
 # Grafic and Interpretation of the Estimated Series of Volatility
 
-TAKE THIS FROM THE MODEL CHOSEN ABOVE. FOR NOW HAVE TAKEN THE ONE FROM THE FIRST MODEL (GARCH(1,1))
+The estimated series of volatility for the first model is shown below, together with the returns. 
+PERHAPS THE E-GARCH IS BETTER THEN!?
 
 ```{r}
+v <- sigma(m.egarch) 
+v_anualized <- (250)^0.5*v
 par(mfcol=c(2,1))  # Show volatility and returns simultaneously.
 plot(v_anualized)
 plot(rendixic) 
 ```
 
-Comparison of the estimated volatilities and the absolute value of the returns. 
+The general behaviour seems to match relatively well, i.e. the movements in the two plots coincide relatively well.
+
+A comparison of the estimated volatilities and the absolute value of the returns is given below. 
 
 ```{r}
 returnsabs <- abs(rendixic)
-par(mfcol=c(3,1))  # Show volatility and returns
+par(mfcol=c(2,1))  # Show volatility and returns
 plot(v_anualized)
-plot(vgjr_anualized)
 plot(returnsabs) 
 ```
 
 They all seem to follow a similar pattern, which is a good sign, even though we cannot compare the absolute values of the data shown in the plots. 
 
 ```{r}
+par(mfrow = c(1,1))
 time <-  data.frame(returnsabs, v)
 ts.plot(time,gpars= list(xlab="time", ylab=",", col = 1:ncol(time)))
 legend("topleft", c("returnsabs","v"), lty=c(1,1), col=c("black","red"), cex=0.6)
@@ -432,19 +452,28 @@ legend("topleft", c("returnsabs","v"), lty=c(1,1), col=c("black","red"), cex=0.6
 
 # Grafic and Interpretation of the News Impact Curve
 
+The news impact curve for our chosen model is shown below. Since the standard GARCH model does not take the leverage effect into effect, the news impact curve is symmetric. DETTE ER JO DUMT, MEN KAN JO IKKE BRUKE GJR-GARCH VIRKER DET SOM!? NOE ANNET JEG KAN GJØRE MED DETTE?
+
 ```{r}
-par(mfrow=c(2,1))
+par(mfrow=c(1,1))
 ni <- newsimpact(z = NULL, m)
 plot(ni$zx, ni$zy, ylab=ni$yexpr, xlab=ni$xexpr, type="l", main = "News Impact Curve")
-ni2 <- newsimpact(z = NULL, mgjr)
-plot(ni2$zx, ni2$zy, ylab=ni2$yexpr, xlab=ni2$xexpr, type="l", main = "News Impact Curve")
 ```
-
-INTERPRETATIONS?!
 
 # Volatility Predictions and Interpretations
 
 
 
+# Calculations via Historical Volatility and EWMA
+
+# Calculation and Interpretation of VaR 
+
+Here we will calculate and interpretate the Value at Risk (VaR) using estimated volatilities from several different models. 
+
+# Multivariate DCC
+
+Should choose a stock in the NASDAQ, perhaps Apple (?) and compare to the NASDAQ Composite. 
+
+# News Impact Surface and Estimated Correlation 
 
 # Conclusions 
