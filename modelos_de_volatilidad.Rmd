@@ -465,8 +465,8 @@ Below volatility are predicted while leaving out the last 10 observations when e
 ```{r}
 (m.egarch.pred <- ugarchfit(spec = spec.egarch, data = rendixic, out.sample = 10))
 forc <- ugarchforecast(m.egarch.pred, n.ahead=10, n.roll= 0) 
-show(forc)
-fpm(forc)
+#show(forc)
+#fpm(forc)
 
 par(mfrow=c(2,1),font=2,font.lab=4,font.axis=2,las=1)
 plot(forc, which = 1)
@@ -479,10 +479,10 @@ As we can see from the uppermost plot, these static predictions (for the mean) 1
 Next, let us predict 10 steps into the future with a rolling window. We reestimate the model at each time step and estimate one step into the future after each reestimation. After doing this 10 times, we have effectively predicted 10 days into the future. 
 
 ```{r}
-forc2 <- ugarchforecast(m.egarch.pred, n.ahead=1, n.roll= 100)
-fpm(forc2)
-sigma(forc2) 
-fitted(forc2)
+forc2 <- ugarchforecast(m.egarch.pred, n.ahead=1, n.roll= 10)
+#fpm(forc2)
+#sigma(forc2) 
+#fitted(forc2)
 
 par(mfrow=c(2,1),font=2,font.lab=4,font.axis=2,las=1)
 plot(forc2, which = 2)
@@ -496,9 +496,9 @@ The same type of movement can be seen when predicting with a rolling window 100 
 ```{r}
 (m.egarch.pred2 <- ugarchfit(spec = spec.egarch, data = rendixic, out.sample = 100))
 forc3 <- ugarchforecast(m.egarch.pred2, n.ahead=1, n.roll= 100)
-fpm(forc3)
-sigma(forc3) 
-fitted(forc3)
+#fpm(forc3)
+#sigma(forc3) 
+#fitted(forc3)
 
 par(mfrow=c(2,1),font=2,font.lab=4,font.axis=2,las=1)
 plot(forc3, which = 2)
@@ -507,7 +507,7 @@ plot(forc3, which = 4)
 
 # Calculations via Historical Volatility and EWMA
 
-Historical volatility given below. 
+Historical volatility is calculated below. The historical volatility has been calculated using Simple Moving Average (SMA) over different time periods. 
 
 ```{r}
 par(mfrow=c(1,1),font=2,font.lab=4,font.axis=2,las=1)
@@ -516,45 +516,41 @@ Fechas<-Fechas[-1] # Eliminate the first date, since it was lost when calculatin
 
 vol.hist20 <- SMA(rendixic^2, n=20) 
 Fechas2<-Fechas[21:2556] 
-plot(Fechas2, vol.hist20, type="l", ylab='variance', main='1 month moving average')
+#plot(Fechas2, vol.hist20, type="l", ylab='variance', xlab="time", main='1 month moving average')
 
+vol.hist80 <- SMA(rendixic^2, n=80) 
+Fechas3<-Fechas[81:2556]
+#plot(Fechas3, vol.hist80, type="l", ylab='variance', xlab="time",main='4 month moving average')
 
-# vol.hist80 <- SMA(rendibex^2, n=80) 
-# Fechas3<-Fechas[81:1563]
-# plot(Fechas3, vol.hist80, type="l", ylab='variance', main='4 month moving average')
-# 
-# vol.hist160 <- SMA(rendibex^2, n=160) 
-# Fechas4<-Fechas[161:1563]
-# plot(Fechas4, vol.hist160, type="l", ylab='variance', main='8 month moving average')
-# 
-# vol.hist240 <- SMA(rendibex^2, n=240) 
-# Fechas5<-Fechas[241:1563]
-# plot(Fechas5, vol.hist240, type="l", ylab='variance', main='1 year moving average')
-# 
-# par(mfrow=c(2,2), cex=0.6, mar=c(2,2,3,1))
-# plot(Fechas2, vol.hist20, type="l", ylab='variance', main='1 month moving average')
-# plot(Fechas3, vol.hist80, type="l", ylab='variance', main='4 month moving average')
-# plot(Fechas4, vol.hist160, type="l", ylab='variance', main='8 month moving average')
-# plot(Fechas5, vol.hist240, type="l", ylab='variance', main='1 year moving average')
+vol.hist160 <- SMA(rendixic^2, n=160) 
+Fechas4<-Fechas[161:2556]
+#plot(Fechas4, vol.hist160, type="l", ylab='variance', xlab="time",main='8 month moving average')
+
+vol.hist240 <- SMA(rendixic^2, n=240) 
+Fechas5<-Fechas[241:2556]
+#plot(Fechas5, vol.hist240, type="l", ylab='variance', xlab="time",main='1 year moving average')
+ 
+par(mfrow=c(2,2), cex=0.6, mar=c(2,2,3,1))
+plot(Fechas2, vol.hist20, type="l", ylab='variance', xlab="time", main='1 month moving average')
+plot(Fechas3, vol.hist80, type="l", ylab='variance', xlab="time", main='4 month moving average')
+plot(Fechas4, vol.hist160, type="l", ylab='variance', xlab="time", main='8 month moving average')
+plot(Fechas5, vol.hist240, type="l", ylab='variance', xlab="time", main='1 year moving average')
 ```
 
+The Exponentially Weighted Moving Average (EWMA) model is used to calculate volatility. Different values of the parameters $k$ and $\lambda$ are used. 
 
-```{r, eval = F}
-###################
-#Exponential Weighted Moving Average# 
-###################
+```{r}
+vol.ewma0.95 <- EWMA(rendixic^2, lambda = 0.05) # note: in EWMA lambda is actually 1-lambda
+#plot(Fechas, vol.ewma0.95, type="l", ylab='variance', xlab = "time", main='EWMA 0.95')
 
-vol.ewma0.95 <- EWMA(rendibex^2, lambda = 0.05) # note: in EWMA lambda is actually 1-lambda
-plot(Fechas, vol.ewma0.95, type="l", ylab='variance', main='EWMA 0.95')
+vol.ewma0.75 <- EWMA(rendixic^2, lambda = 0.25) # note: in EWMA lambda is actually 1-lambda
+#plot(Fechas, vol.ewma0.75, type="l", ylab='variance', xlab = "time", main='EWMA 0.75')
 
-vol.ewma0.75 <- EWMA(rendibex^2, lambda = 0.25) # note: in EWMA lambda is actually 1-lambda
-plot(Fechas, vol.ewma0.75, type="l", ylab='variance', main='EWMA 0.75')
+vol.ewma0.5 <- EWMA(rendixic^2, lambda = 0.5) # note: in EWMA lambda is actually 1-lambda
+#plot(Fechas, vol.ewma0.5, type="l", ylab='variance', xlab = "time", main='EWMA 0.5')
 
-vol.ewma0.5 <- EWMA(rendibex^2, lambda = 0.5) # note: in EWMA lambda is actually 1-lambda
-plot(Fechas, vol.ewma0.5, type="l", ylab='variance', main='EWMA 0.5')
-
-vol.ewma0.25 <- EWMA(rendibex^2, lambda = 0.75) # note: in EWMA lambda is actually 1-lambda
-plot(Fechas, vol.ewma0.25, type="l", ylab='variance', main='EWMA 0.25')
+vol.ewma0.25 <- EWMA(rendixic^2, lambda = 0.75) # note: in EWMA lambda is actually 1-lambda
+#plot(Fechas, vol.ewma0.25, type="l", ylab='variance', xlab = "time", main='EWMA 0.25')
 
 par(mfrow=c(2,2), cex=0.6, mar=c(2,2,3,1))
 plot(Fechas, vol.ewma0.95, type="l", ylab='variance', main='EWMA 0.95')
@@ -562,27 +558,55 @@ plot(Fechas, vol.ewma0.75, type="l", ylab='variance', main='EWMA 0.75')
 plot(Fechas, vol.ewma0.5, type="l", ylab='variance', main='EWMA 0.5')
 plot(Fechas, vol.ewma0.25, type="l", ylab='variance', main='EWMA 0.25')
 
-dev.off()
-variance=v^2
-comparison = data.frame(variance, vol.ewma0.95)
+par(mfrow=c(1,1), cex=0.6, mar=c(2,2,3,1))
+variance <- v^2
+comparison <- data.frame(variance, vol.ewma0.95)
 ts.plot(comparison,gpars= list(ylab=",", col = 1:ncol(comparison)))
-legend("topleft", c("GJR-GARCH","EWMA 0.95"), lty=c(1,1), col=c("black","red"))
+legend("topleft", c("E-GARCH","EWMA 0.95"), lty=c(1,1), col=c("black","red"))
 
-variance=v^2
-variance2=variance[21:1562]
-volhist=vol.hist20[1:1542]
-comparison = data.frame(variance2, volhist)
+variance2 <- variance[21:2555]
+volhist <- vol.hist20[1:2535]
+comparison <- data.frame(variance2, volhist)
 ts.plot(comparison,gpars= list(ylab=",", col = 1:ncol(comparison)))
-legend("topleft", c("GJR-GARCH","1 month moving average"), lty=c(1,1), col=c("black","red"))
+legend("topleft", c("E-GARCH","1 month moving average"), lty=c(1,1), col=c("black","red"))
 ```
+
+Discussion: 
+
+NOTE THAT THE TIMES ON THE X-AXIS ARE FUCKED UP. TRY TO FIX THIS LATER!
 
 # Calculation and Interpretation of VaR 
 
-Here we will calculate and interpretate the Value at Risk (VaR) using estimated volatilities from several different models. 
+Here we will calculate and interpret the Value at Risk (VaR) using estimated volatilities from several different models. 
+
+```{r VaR, cache = T}
+# Calculating VaR based on the first type of prediction, without rolling window.
+forc <- ugarchforecast(m.egarch, n.ahead=1, n.roll= 0)
+show(forc)
+var5.garch <- - qnorm(0.95) * 0.01791
+show(var5.garch)
+
+# Calculating VaR based on the second type of prediction, with rolling window. 
+var.t <-  ugarchroll(spec.egarch, data = rendixic, n.ahead = 1, forecast.length = 50, refit.every = 10,  refit.window = "rolling",
+                   calculate.VaR = TRUE, VaR.alpha = 0.05)
+plot(var.t, which = 4, VaR.alpha = 0.05)
+report(var.t, VaR.alpha = 0.05)
+
+#####################################
+#comparaci?n in sample ##
+##################################
+
+```
+
 
 # Multivariate DCC
 
-Should choose a stock in the NASDAQ, perhaps Apple (?) and compare to the NASDAQ Composite. 
+In order to solve this problem I have chosen the stock of Stratus Properties Inc. (STRS), which is one of the [top 30 components](https://finance.yahoo.com/quote/%5EIXIC/components?p=%5EIXIC) of the NASDAQ Composite Index. 
+
+```{r}
+# Get STRS stock data and redo analysis for this stock. 
+```
+
 
 # News Impact Surface and Estimated Correlation 
 
