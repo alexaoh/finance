@@ -36,6 +36,9 @@ library(forecast)
 library(rugarch)
 library(fTrading)
 library(latex2exp)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
 ```
 
 # Abstract
@@ -57,7 +60,7 @@ The data is gathered directly from Yahoo Finance and can be found [here](https:/
 # Empirical Application
 
 ## Load Data 
-First, we load the NASDAQ Composite data from Yahoo Finance.
+First, we load the NASDAQ Composite data from Yahoo Finance. Note that I downloaded the data in csv format instead of loading directly via the `getSymbols` API, just be to be sure that I always have access to the data. 
 
 ```{r, echo = F}
 options("getSymbols.warning4.0"=FALSE)
@@ -65,19 +68,22 @@ options("getSymbols.warning4.0"=FALSE)
 
 
 ```{r}
-getSymbols("^IXIC",from="2012-01-01", to="2022-03-01", warnings = F) 
-dim(IXIC)         # <=== find the size of the data downloaded
-#write.csv(IXIC, file = "IXIC.csv", row.names = F)
-#data <- read.csv2("IXIC.csv")
-
+#getSymbols("^IXIC",from="2012-01-01", to="2022-03-01", warnings = F) 
+Ixic <- read.csv("IXIC.csv", )
+dim(Ixic) 
+#dim(IXIC)
 # Want the adjusted closed data.
-ixic <- IXIC[,6]
+ixic <- Ixic[,6]
+#IXIC <- IXIC[,6]
 ```
 
 The data does not have any NA values (Weekends and holidays have been removed already), we can start working with the data directly. 
 
 ```{r, echo = F}
-plot(ixic)
+tibble("date" = as.Date(Ixic[,1]), ixic) %>% ggplot(aes(x = date, y = ixic)) +
+    geom_line() +
+    theme_minimal() +
+    scale_x_date(date_labels = "%Y %b %d", date_breaks = "1 year")
 ```
 
 COMMENT: DRAW SOME HAPPENINGS IN THE SERIES (Covid March 2020 and Russia-Ukraine in Feb 2022 + leading up to Feb in the beginning of 2022). Did something happen in Jan 2019 in the US (with tech-companies?) Did something happen in Jan 2016 (small regression).
@@ -129,11 +135,14 @@ Next, we check if the returns (rendimientos) are stationary. Below we calculate 
 
 ```{r}
 rendixic <- diff(log(ixic))
-rendixic <- rendixic[-1] # The first difference is NA, needs to be removed. 
+#r <- diff(log(IXIC))[-1]
 ```
 
 ```{r}
-plot(rendixic)
+tibble("date" = as.Date(Ixic[-c(1),1]), rendixic) %>% ggplot(aes(x = date, y = rendixic)) +
+    geom_line() +
+    theme_minimal() +
+    scale_x_date(date_labels = "%Y %b %d", date_breaks = "1 year")
 ```
 
 Then, the ADF test is calculated without trends, since there does not look to be any trends in the plot of the returns. Note that, as earlier, the conclusion of the test and the amount of lags that are chosen via BIC are the same when assuming a drift or both types of trends.
@@ -192,6 +201,7 @@ basicStats(rendixic)
 ```
 
 ```{r, echo = F}
+par(mfrow=c(1,1),font=2,font.lab=4,font.axis=2,las=1)
 hist(rendixic,breaks=100,freq=F, main = 'Histogram of the Returns')
 curve(dnorm(x, mean=mean(rendixic), sd=sd(rendixic)), col=2, add=T)
 ```
@@ -415,23 +425,34 @@ Thus, I would conclude that the best model out of the three fitted is the EGARCH
 
 The estimated (anualized) series of volatility for the ARMA(2,2)-EGARCH model is shown below, together with the returns. 
 
-```{r}
+```{r, warning=FALSE}
 v <- sigma(m.egarch) 
 v_anualized <- (250)^0.5*v
-par(mfcol=c(2,1))  # Show volatility and returns simultaneously.
-plot(v_anualized)
-plot(rendixic) 
+tibble("date" = as.Date(Ixic[-c(1),1]), "v_anualized" = v_anualized[,1], rendixic) %>% 
+gather(key = distribution, value = value, -date)%>% 
+ggplot(aes(x = date, y = value)) +
+  geom_line() +
+  theme_minimal() +
+  scale_x_date(date_labels = "%Y %b %d", date_breaks = "1 year") +
+  facet_wrap(~distribution, nrow = 2, scales = "free")
 ```
 
 The general behaviour seems to match relatively well, i.e. the movements in the two plots coincide relatively well. Days with larger (absolute) returns go together with the days with larger estimated volatilities. 
 
 A comparison of the estimated volatilities and the absolute value of the returns is given below. 
 
-```{r}
+```{r, warning = F}
 returnsabs <- abs(rendixic)
-par(mfrow=c(2,1),font=2,font.lab=4,font.axis=2,las=1)  # Show volatility and returns
-plot(v_anualized)
-plot(returnsabs) 
+#par(mfrow=c(2,1),font=2,font.lab=4,font.axis=2,las=1)  # Show volatility and returns
+#plot(v_anualized)
+#plot(returnsabs) 
+tibble("date" = as.Date(Ixic[-c(1),1]), "v_anualized" = v_anualized[,1], returnsabs) %>% 
+gather(key = distribution, value = value, -date)%>% 
+ggplot(aes(x = date, y = value)) +
+  geom_line() +
+  theme_minimal() +
+  scale_x_date(date_labels = "%Y %b %d", date_breaks = "1 year") +
+  facet_wrap(~distribution, nrow = 2, scales = "free")
 ```
 
 They all seem to follow a similar pattern, which is a good sign, even though we cannot compare the absolute values of the data shown in the plots. 
@@ -516,7 +537,7 @@ $$
 
 ```{r}
 par(mfrow=c(1,1),font=2,font.lab=4,font.axis=2,las=1)
-Fechas<-as.Date(rownames(zoo(IXIC)))
+Fechas<-as.Date(Ixic[,1])
 Fechas<-Fechas[-1] # Eliminate the first date, since it was lost when calculating returns. 
 
 vol.hist20 <- SMA(rendixic^2, n=20) 
