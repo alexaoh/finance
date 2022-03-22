@@ -4,17 +4,16 @@ subtitle: "Trabajo Final - Modelos de Volatilidad - Financial Statistics"
 author: "Alexander J Ohrt"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
-  html_document:
-    code_folding: show
-    toc: true
-    toc_depth: 3
-    theme: readable
-    highlight: textmate
-    number_sections: true
+  # html_document:
+  #   code_folding: show
+  #   toc: true
+  #   toc_depth: 3
+  #   theme: readable
+  #   highlight: textmate
+  #   number_sections: true
   pdf_document:
     fig_caption: true
     number_sections: true
-    
 editor_options: 
   chunk_output_type: console
 geometry:
@@ -27,7 +26,7 @@ urlcolor: blue
 
 ```{r setup, include=FALSE}
 rm(list = ls())
-knitr::opts_chunk$set(echo = TRUE, warning = F, fig.width = 10, comment = "#>")
+knitr::opts_chunk$set(echo = F, warning = F, fig.width = 10, comment = "#>")
 setwd("/home/ajo/gitRepos/finance")
 library(quantmod)
 library(fBasics)
@@ -37,8 +36,8 @@ library(rugarch)
 library(fTrading)
 library(latex2exp)
 library(ggplot2)
-library(dplyr)
 library(tidyverse)
+library(rmgarch)
 ```
 
 # Abstract
@@ -71,6 +70,7 @@ options("getSymbols.warning4.0"=FALSE)
 #getSymbols("^IXIC",from="2012-01-01", to="2022-03-01", warnings = F) 
 Ixic <- read.csv("IXIC.csv", )
 dim(Ixic) 
+any(is.na(Ixic))
 #dim(IXIC)
 # Want the adjusted closed data.
 ixic <- Ixic[,6]
@@ -79,11 +79,12 @@ ixic <- Ixic[,6]
 
 The data does not have any NA values (Weekends and holidays have been removed already), we can start working with the data directly. 
 
-```{r, echo = F}
+```{r}
 tibble("date" = as.Date(Ixic[,1]), ixic) %>% ggplot(aes(x = date, y = ixic)) +
     geom_line() +
     theme_minimal() +
-    scale_x_date(date_labels = "%Y %b %d", date_breaks = "1 year")
+    scale_x_date(date_labels = "%Y %b %d", date_breaks = "1 year") +
+    ggtitle("NASDAQ Composite (^IXIC)")
 ```
 
 COMMENT: DRAW SOME HAPPENINGS IN THE SERIES (Covid March 2020 and Russia-Ukraine in Feb 2022 + leading up to Feb in the beginning of 2022). Did something happen in Jan 2019 in the US (with tech-companies?) Did something happen in Jan 2016 (small regression).
@@ -142,7 +143,8 @@ rendixic <- diff(log(ixic))
 tibble("date" = as.Date(Ixic[-c(1),1]), rendixic) %>% ggplot(aes(x = date, y = rendixic)) +
     geom_line() +
     theme_minimal() +
-    scale_x_date(date_labels = "%Y %b %d", date_breaks = "1 year")
+    scale_x_date(date_labels = "%Y %b %d", date_breaks = "1 year") +
+    ggtitle("Returns of NASDAQ Composite (^IXIC)")
 ```
 
 Then, the ADF test is calculated without trends, since there does not look to be any trends in the plot of the returns. Note that, as earlier, the conclusion of the test and the amount of lags that are chosen via BIC are the same when assuming a drift or both types of trends.
@@ -218,7 +220,7 @@ acf(rendixic,ylim=c(-1,1),main="rendixic")
 pacf(rendixic,ylim=c(-1,1),main="rendixic")
 ```
 
-It looks like both the ACF and the partial ACF (PACF) have 9 significant coefficients. This seems like a large order of ARMA-model to estimate, so I will try with smaller models instead. Note that the third coefficient of both ACF and PACF seems to be non-significant, which might be a hint to what order of model would be fitting. The table below shows the BIC and the AIC for different orders of ARMA-models. 
+Note that the third coefficient of both ACF and PACF seems to be non-significant, which might be a hint to what order of model would be fitting. Notice also that both the ACF and the PACF have significant coefficients after the third lag; 6, 7, 8 and 9 seem to be significant. An ARMA of order 6, 7, 8 or 9 seems like a too large order of model to estimate, so I will try with smaller models instead, noting that the third coefficient is non-significant. The table below shows the BIC and the AIC for different orders of ARMA-models. The largest model I have considered is ARMA(3,2) (or ARMA(2,3)), since an ARMA(3,3) yields NaNs in the estimates. 
 
 ```{r, echo = F, results='hide'}
 #ar(1)
@@ -261,14 +263,19 @@ pnorm(c(abs(model7$coef)/sqrt(diag(model7$var.coef))), mean=0, sd=1, lower.tail=
 model8 <- arima(rendixic, order = c(0,0,3),include.mean = TRUE)
 model8
 pnorm(c(abs(model8$coef)/sqrt(diag(model8$var.coef))), mean=0, sd=1, lower.tail=FALSE)
+
+#ARMA(3,2)
+model9 <- arima(rendixic, order = c(3,0,2),include.mean = TRUE)
+model9
+pnorm(c(abs(model9$coef)/sqrt(diag(model9$var.coef))), mean=0, sd=1, lower.tail=FALSE)
 ```
 
 Note that all models we have estimated here have significant coefficient estimates to a predetermined significance level of $\alpha = 0.05$.
 
 ```{r, echo = F}
-models <- c("AR(1)", "MA(1)", "ARMA(1,1)", "AR(2)", "MA(2)", "ARMA(2,2)", "AR(3)", "MA(3)") 
-bics <- c(model$aic, model2$aic, model3$aic, model4$aic, model5$aic, model6$aic, model7$aic, model8$aic)
-aics <- c(BIC(model), BIC(model2), BIC(model3), BIC(model4), BIC(model5), BIC(model6), BIC(model7), BIC(model8))
+models <- c("AR(1)", "MA(1)", "ARMA(1,1)", "AR(2)", "MA(2)", "ARMA(2,2)", "AR(3)", "MA(3)", "ARMA(3,2)") 
+aics <- c(model$aic, model2$aic, model3$aic, model4$aic, model5$aic, model6$aic, model7$aic, model8$aic, model9$aic)
+bics <- c(BIC(model), BIC(model2), BIC(model3), BIC(model4), BIC(model5), BIC(model6), BIC(model7), BIC(model8), BIC(model9))
 df.arma <- cbind("Model" = models, "BIC" = bics, "AIC" = aics)
 knitr::kable(df.arma, caption = "AIC and BIC of different estimated models for the returns of NASDAQ Composite")
 ```
@@ -394,6 +401,7 @@ m.egarch.AIC <- -6.4958
 ```
 
 All estimated parameters are significant to a level of $\alpha = 0.05$. For this model, we do not require positivity of the GARCH parameter estimates. WHAT ABOUT STATIONARITY, DO WE REQUIRE THIS? The residual plots below do not show any autocorrelation before moving to a large number of lags, which is a good sign that the model has modelized the data adequately. Moreover, the AIC is smaller for this model compared to the first proposed model. Thus, I would prefer this model over the first model. Note that $\gamma > 0$, which should mean that the positive news have a larger effect on the news compared to the negative news, which does not make sense here, when looking at the news impact curve. THIS IS STRANGE, I DO NOT UNDERSTAND THIS!? ASK PROFE!
+DETTE ER MOTSATT DEFINERT I R VIRKER DET SOM! EN POSITIV GAMMA ER DET SAMME SOM EN NEGATIV I LIGNINGENE, I.E. EN POSITIV GAMMA GIR STØRRE EFFEKT FOR DE NEGATIVE NYHETENE ENN DE POSITIVE, SOM VI SER AV PLOTTET!
 
 ```{r}
 par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
@@ -627,9 +635,9 @@ var5.garch <- - qnorm(0.95) * 0.01791
 show(var5.garch)
 ```
 
-This value means that, with a confidence level of $95\%$, the largest expected loss for tomorrow in our index is $\approx 2.95 \%$. In other terms, the probability of the return tomorrow being lower than $-2.95\%$ is $5\%$. 
+This value means that, with a confidence level of 95%, the largest expected loss for tomorrow in our index is $\approx 2.95$%. In other terms, the probability of the return tomorrow being lower than -2.95% is 5%. 
 
-Next we calculate the VaR with a rolling window dynamic forecast, using the EGARCH model, with a sinificance level of $5\%$.
+Next we calculate the VaR with a rolling window dynamic forecast, using the EGARCH model, with a significance level of 5%.
 
 ```{r, cache = T}
 # Calculating VaR based on the second type of prediction, with rolling window. 
@@ -639,7 +647,7 @@ plot(var.t, which = 4, VaR.alpha = 0.05)
 report(var.t, VaR.alpha = 0.05)
 ```
 
-The report above shows that our set level of $5\%$ significance is not kept, i.e. that the largest expected loss cannot be quantified at the $5\%$ significance level. Instead, the VaR is estimated to be $14\%$, which means that the probability of the return the next day being lower than the VaR is $ \approx 14\%$ instead of $5\%$. In practice, this means that the company should set aside more funds than expected, in order to cover the significance level of $5\%$. 
+The report above shows that our set level of 5% significance is not kept, i.e. that the largest expected loss cannot be quantified at the 5% significance level. Instead, the VaR is estimated to be 14%, which means that the probability of the return the next day being lower than the VaR is $\approx 14$% instead of 5%. In practice, this means that the company should set aside more funds than expected, in order to cover the significance level of 5%. 
 
 LITT USIKKER PÅ DENNE TOLKNINGEN!
 
@@ -668,6 +676,7 @@ HVA ER DETTE?
 
 ```{r, eval = F}
 # Copied from aplication_VaR_2022.R
+# VET IKKE HELT HVA DETTE ER, SKJØNNER DET IKKE HELT ENDA. 
 #calculate the fraction of sample where loss exceed both 1% and 5% VaR for EWMA and GjR-GARCH(1,1)
 sum(rendibex < var5.ewma)/length(rendibex) # fraction of sample where loss exceeds 5% VaR for EWMA
 
@@ -714,9 +723,9 @@ sum(rendibex < var1.gjrgarch)/length(rendibex) # fraction of sample where loss e
 
 HVORFOR IKKE FORECASTS SOM BLIR BRUKT HER?
 
-# Multivariate DCC
+# Multivariate DCC GARCH
 
-In order to solve this problem I have chosen the stock of Stratus Properties Inc. (STRS), which is one of the [top 30 components](https://finance.yahoo.com/quote/%5EIXIC/components?p=%5EIXIC) of the NASDAQ Composite Index. 
+In order to solve this problem I have chosen the stock of Stratus Properties Inc. (STRS), which is one of the [top 30 components](https://finance.yahoo.com/quote/%5EIXIC/components?p=%5EIXIC) of the NASDAQ Composite Index. Similarly to the IXIC-data, this data has been downloaded in a csv-file directly from the Yahoo Finance website. The adjusted close of the time series is plotted below. 
 
 ```{r}
 # Get STRS stock data and redo analysis for this stock. 
@@ -727,14 +736,254 @@ str(STRS)
 strs <- STRS[,6]
 head(strs)
 
-date <- as.Date(STRS$Date,"%d/%m/%Y")  
-
-# Gr?fico de la serie temporal
-#plot(date, strs,type="l",col="blue", main="Prices")
-#legend("bottomleft", c("Austria","Grecia"), lty=c(1,1), col=c("blue","red"))
+tibble("date" = as.Date(STRS[,1]), strs) %>% ggplot(aes(x = date, y = strs)) +
+    geom_line() +
+    theme_minimal() +
+    scale_x_date(date_labels = "%Y %b %d", date_breaks = "1 year") +
+    ggtitle("Stratus Properties Inc. (STRS)")
 ```
 
 
-# News Impact Surface and Estimated Correlation 
+The returns of STRS are calculated and plotted below. 
+
+```{r}
+rendstrs <- diff(log(strs))
+tibble("date" = as.Date(STRS[-c(1),1]), rendstrs) %>% ggplot(aes(x = date, y = rendstrs)) +
+    geom_line() +
+    theme_minimal() +
+    scale_x_date(date_labels = "%Y %b %d", date_breaks = "1 year") +
+    ggtitle("Returns of Stratus Properties Inc. (STRS)")
+```
+
+Analysis of stationarity shows that this series is integrated of order 1 as well, similarly to IXIC. Thus, we work with the returns of the series instead of the series itself. 
+
+```{r analysisOfSTRS, eval = F, echo = F}
+par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1) 
+acf(strs,ylim=c(-1,1),main="strs")
+pacf(strs,ylim=c(-1,1),main="strs")
+
+Box.test(strs, lag = 1, type = c("Ljung-Box"))
+Box.test(strs, lag = 5, type = c("Ljung-Box"))
+Box.test(strs, lag = 10, type = c("Ljung-Box"))
+Box.test(strs, lag = 15, type = c("Ljung-Box"))
+Box.test(strs, lag = 20, type = c("Ljung-Box"))
+
+strs.df<-ur.df(strs, type = c("trend"), lags=20, selectlags = c("BIC"))
+summary(strs.df)   
+plot(strs.df)
+
+rendstrs.df<-ur.df(rendstrs, type = c("none"), lags=20, selectlags = c("BIC"))
+summary(rendstrs.df) 
+plot(rendstrs.df)
+
+strs.pp<-ur.pp(strs, type = c("Z-tau"), model = c("trend"), lags = c("long"))
+summary(strs.pp)  
+
+rendstrs.pp<-ur.pp(rendstrs, type = c("Z-tau"), model = c("trend"), lags = c("long"))
+summary(rendstrs.pp)  
+
+strs.kpss<-ur.kpss(strs, type = c("tau"), lags = c("short"))
+summary(strs.kpss)
+
+rendstrs.kpss<-ur.kpss(rendstrs, type = c("tau"), lags = c("short"))
+summary(rendstrs.kpss)
+
+basicStats(rendstrs)
+
+par(mfrow=c(1,1),font=2,font.lab=4,font.axis=2,las=1)
+hist(rendstrs,breaks=100,freq=F, main = 'Histogram of the Returns')
+curve(dnorm(x, mean=mean(rendstrs), sd=sd(rendstrs)), col=2, add=T)
+
+par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
+acf(rendstrs,ylim=c(-1,1),main="rendstrs")
+pacf(rendstrs,ylim=c(-1,1),main="rendstrs")
+
+#ar(1)
+model = arima(rendstrs, order = c(1,0,0),include.mean = TRUE)
+model$aic
+BIC(model)
+pnorm(c(abs(model$coef)/sqrt(diag(model$var.coef))), mean=0, sd=1, lower.tail=FALSE)
+
+#ma(1)
+model2 = arima(rendstrs, order = c(0,0,1),include.mean = TRUE)
+model2 
+pnorm(c(abs(model2$coef)/sqrt(diag(model2$var.coef))), mean=0, sd=1, lower.tail=FALSE)
+
+#arma(1,1) 
+model3 = arima(rendstrs, order = c(1,0,1),include.mean = TRUE)
+model3 
+pnorm(c(abs(model3$coef)/sqrt(diag(model3$var.coef))), mean=0, sd=1, lower.tail=FALSE)
+
+#ar(2) 
+model4 = arima(rendstrs, order = c(2,0,0),include.mean = TRUE)
+model4 
+pnorm(c(abs(model4$coef)/sqrt(diag(model4$var.coef))), mean=0, sd=1, lower.tail=FALSE)
+
+#MA(2) 
+model5 = arima(rendstrs, order = c(0,0,2),include.mean = TRUE)
+model5 
+pnorm(c(abs(model5$coef)/sqrt(diag(model5$var.coef))), mean=0, sd=1, lower.tail=FALSE)
+
+#arma(2,2)
+model6 <- arima(rendstrs, order = c(2,0,2),include.mean = TRUE)
+model6
+pnorm(c(abs(model6$coef)/sqrt(diag(model6$var.coef))), mean=0, sd=1, lower.tail=FALSE)
+
+#AR(3)
+model7 <- arima(rendstrs, order = c(3,0,0),include.mean = TRUE)
+model7
+pnorm(c(abs(model7$coef)/sqrt(diag(model7$var.coef))), mean=0, sd=1, lower.tail=FALSE)
+
+#MA(3)
+model8 <- arima(rendstrs, order = c(0,0,3),include.mean = TRUE)
+model8
+pnorm(c(abs(model8$coef)/sqrt(diag(model8$var.coef))), mean=0, sd=1, lower.tail=FALSE)
+
+#arma(2,3)
+model9 <- arima(rendstrs, order = c(3,0,3),include.mean = TRUE)
+model9
+pnorm(c(abs(model9$coef)/sqrt(diag(model9$var.coef))), mean=0, sd=1, lower.tail=FALSE)
+
+#arma(4,3)
+model10 <- arima(rendstrs, order = c(4,0,3),include.mean = TRUE)
+model10
+pnorm(c(abs(model10$coef)/sqrt(diag(model10$var.coef))), mean=0, sd=1, lower.tail=FALSE)
+
+models <- c("AR(1)", "MA(1)", "ARMA(1,1)", "AR(2)", "MA(2)", "ARMA(2,2)", "AR(3)", "MA(3)", "ARMA(3,3)", "ARMA(4,3)") 
+aics <- c(model$aic, model2$aic, model3$aic, model4$aic, model5$aic, model6$aic, model7$aic, model8$aic, model9$aic, model10$aic)
+bics <- c(BIC(model), BIC(model2), BIC(model3), BIC(model4), BIC(model5), BIC(model6), BIC(model7), BIC(model8), BIC(model9), BIC(model10))
+df.arma <- cbind("Model" = models, "BIC" = bics, "AIC" = aics)
+knitr::kable(df.arma, caption = "AIC and BIC of different estimated models for the returns of STRS")
+# Looks like ARMA(3,3) is the best, because of the lowest AIC (ARMA(4,4) produces NaNs, so cannot keep testing models with more params).
+# However, ar3 is not significant!!
+
+# Choose the MA(1) for lowest BIC and second lowest AIC (and significant coefficients).
+
+mean.model <- arima(rendstrs, order = c(0,0,1),include.mean = TRUE)
+mean.model
+pnorm(c(abs(mean.model$coef)/sqrt(diag(mean.model$var.coef))), mean=0, sd=1, lower.tail=FALSE)
+plot(mean.model) # It is stationary. Alles gut. 
+tsdiag(mean.model) # No significant coefficients in the ACF. GREAT!
+
+par(mfrow = c(1,1),font=2,font.lab=4,font.axis=2,las=1)
+qqnorm(mean.model$residuals)
+qqline(mean.model$residuals, datax = FALSE)
+
+plot(mean.model$residuals)
+title (main="Residuals")
+normalTest(mean.model$residuals,method="jb") # Unreasonable to assume normality of the residuals. 
+
+# Test for ARCH effects. 
+residuals <- mean.model$residuals
+residuals2 <- residuals^2
+par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
+acf(residuals2,ylim=c(-1,1),main="Squared Residuals") 
+pacf(residuals2,ylim=c(-1,1),main="Squared Residuals")
+Box.test(residuals2,lag=1,type='Ljung')
+Box.test(residuals2,lag=5,type='Ljung')
+Box.test(residuals2,lag=10,type='Ljung')
+Box.test(residuals2,lag=15,type='Ljung')
+Box.test(residuals2,lag=20,type='Ljung')
+# There clearly are ARCH effects here!
+
+# Testing with different GARCH models for the volatility. 
+spec1 <- ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(1,1)), mean.model=list(armaOrder=c(0,1)), distribution.model = "std")
+(m <- ugarchfit(spec = spec1, data = rendstrs)) # Positivity and stationarity holds. 
+m.aic <- -4.7716
+par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
+plot(m, which = 10)
+plot(m, which = 11)
+
+spec.mgjr <- ugarchspec(variance.model=list(model="gjrGARCH", garchOrder = c(1,1)), mean.model=list(armaOrder=c(0,1)), distribution.model = "std")
+(mgjr <- ugarchfit(spec = spec.mgjr, data = rendstrs)) # Everything holds!
+mgjr.aic <- -4.7723 # Smaller AIC!
+par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
+plot(mgjr, which = 10)
+plot(mgjr, which = 11)
+
+spec.egarch <- ugarchspec(variance.model = list(model="eGARCH", garchOrder = c(1,1)), mean.model = list(armaOrder=c(0,1)), distribution.model = "std")
+(m.egarch <- ugarchfit(spec = spec.egarch, data = rendstrs)) # Do we expect stationarity and positivity?
+megarch.aic <- -4.7801 # If stationarity is not needed, then this is the best model!
+
+par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
+plot(m.egarch, which = 10)
+plot(m.egarch, which = 11)
+plot(m.egarch, which = 12)
+
+spec.igarch <- ugarchspec(variance.model=list(model="iGARCH", garchOrder = c(1,1)), mean.model=list(armaOrder=c(0,1)), distribution.model = "std")
+(m.igarch <- ugarchfit(spec=spec.igarch,data=rendstrs))
+m.igarch.aic <- -4.7724 # Bigger AIC than EGARCH --> Egarch is better!
+par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
+plot(m.igarch, which = 10)
+plot(m.igarch, which = 11)
+```
+
+After doing a similar analysis of this series, I have come to the conclusion that an MA(1)-EGARCH is the best model to estimate its volatility. This model is used, together with the ARMA(2,2)-EGARCH from IXIC, to estimate the multivariate DCC GARCH model for these two series (both of which are estimated on the logarithmic returns, not on the series themselves). 
+
+```{r}
+returns <- cbind(rendixic,rendstrs) 
+
+# dcc specification - GARCH(1,1) for conditional correlations con diferentes garch para cada serie, en alg?n caso no es modelo asim?trico
+spec1 <- ugarchspec(mean.model = list(armaOrder = c(2,2)), variance.model = list(garchOrder = c(1,1), model = "eGARCH"), distribution.model = "std") 
+spec2 <- ugarchspec(mean.model = list(armaOrder = c(0,1)), variance.model = list(garchOrder = c(1,1), model = "eGARCH"), distribution.model = "std") 
+dcc.garch11.spec <- dccspec(uspec = multispec(c(spec1, spec2)), dccOrder = c(1,1), distribution = "mvnorm")
+(dcc.fit <- dccfit(dcc.garch11.spec, data = returns))
+```
+
+WHAT ASSUMPTIONS NEED TO BE FULFILLED FOR THIS MODEL!?
+
+# Estimated Correlation and News Impact Surface
+
+The plot below shows the conditional standard error estimated from the model (in blue) and the realized absolute returns (in grey). 
+
+```{r}
+plot(dcc.fit, which = 2)
+```
+
+From this plot we can gather that the model has made good estimations of the standard error, because the behaviour of the graphs are similar. Note that we cannot conclude anything based on the absolute values of the quantities; we are only interested in the shape or the behaviour of the quantities. 
+
+The plot below shows the conditional correlation estimated from the model. 
+
+```{r}
+cor1 <- rcor(dcc.fit) 
+par(mfrow=c(1,1),font=2,font.lab=4,font.axis=2,las=1)
+plot(as.Date(STRS[-1,1]),cor1[1,2,], type='l', main="Correlacion between IXIC and STRS")
+```
+
+The correlation is plotted alongside the two original time series below. 
+
+```{r}
+tibble("date" = as.Date(Ixic[-1,1]),"IXIC" = ixic[-1], "STRS" = strs[-1], "cor" = cor1[1,2,]) %>% 
+gather(key = distribution, value = value, -date)%>% 
+ggplot(aes(x = date, y = value)) +
+  geom_line() +
+  theme_minimal() +
+  scale_x_date(date_labels = "%Y %b %d", date_breaks = "1 year") +
+  facet_wrap(~distribution, nrow = 3, scales = "free")
+```
+
+Just by looking at the two time series side by side, they look to move in a similar fashion. The peak in the correlation between the two series, which corresponds to a correlation of about 0.45, took place in the beginnin of 2020, when both prices fell, most likely because of the COVID-pandemic. 
+
+OTHER THAN THAT, I AM NOT QUITE CERTAIN THAT I AM ABLE TO INTERPRET ANYTHING ELSE FROM THE PLOTS. 
+
+The news impact surface is plotted below. 
+
+```{r, results='hide'}
+nisurface(dcc.fit, type="cor")
+```
+
+From this we can learn that 
+
+* Simultaneous negative news in both series lead to the largest increase in correlation ????.
+* Simultaneous positive news in both series lead to an increase in correlation ??? as well, but not to the same extent that the negative shocks do. This shows that the leverage effect has been taken into account in the model. 
+* Negative news in one of the series and positive news in the other leads to a negative correlation ???, which (again) shows that the leverage effect is taken into account, since the negative news clearly get a larger weight than the positive news. 
+
+STEMMER DET AT DET ER KORRELASJONEN SOM ENDRES I NEWS IMPACT CURVE OVER, OG IKKE VOLATILITY!?!?!
 
 # Conclusions 
+
+# QUESTIONS FOR PROFE: 
+
+* Positivity and stationarity assumptions for EGARCH? Looks like positivity is not needed! But is stationarity an assumption that needs to be fulfilled in the model?
+* GÅ GJENNOM OPPGAVEN FOR Å FINNE FLERE SPØRSMÅL!
+

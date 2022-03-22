@@ -570,7 +570,7 @@ plot(forc)
 #como no bajo los datos de quantmode, dar? un error en las fechas
 
 #Instalamos paquete
-install.packages("rmgarch")
+#install.packages("rmgarch")
 library(rmgarch)
 
 #Importamos datos
