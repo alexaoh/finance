@@ -35,6 +35,7 @@ library(urca)
 library(forecast)
 library(rugarch)
 library(fTrading)
+library(latex2exp)
 ```
 
 # Abstract
@@ -507,7 +508,11 @@ plot(forc3, which = 4)
 
 # Calculations via Historical Volatility and EWMA
 
-Historical volatility is calculated below. The historical volatility has been calculated using Simple Moving Average (SMA) over different time periods. 
+Historical volatility is calculated below. The historical volatility has been calculated using Simple Moving Average (SMA) over different time periods
+
+$$
+\sigma_t^2 = \frac1k\sum_{i=1}^kr_{t-1}^2.
+$$
 
 ```{r}
 par(mfrow=c(1,1),font=2,font.lab=4,font.axis=2,las=1)
@@ -537,7 +542,15 @@ plot(Fechas4, vol.hist160, type="l", ylab='variance', xlab="time", main='8 month
 plot(Fechas5, vol.hist240, type="l", ylab='variance', xlab="time", main='1 year moving average')
 ```
 
-The Exponentially Weighted Moving Average (EWMA) model is used to calculate volatility. Different values of the parameters $k$ and $\lambda$ are used. 
+As is apparent from the plots, the volatility pattern is highly dependent on the $k$, i.e. the number of observations used to calculate the moving average. Moreover, we can see that the results are greatly affected by extreme values, especially when $k$ is small, which is clearly seen in the results for the 1 month moving average. The volatility pattern is smoother when $k$ is larger. Which of these values for $k$ gives the "best" results? This is difficult to answer. 
+
+The Exponentially Weighted Moving Average (EWMA) model is used to calculate volatility
+
+$$
+\sigma_t^2 = (1-\lambda)r_{t-1}^2 + \lambda\sigma_{t-1}^2 = (1-\lambda) \sum_{i = 1}^\infty\lambda^{i-1}r_{t-1}^2, \hspace{0.5em} 0<\lambda<1.
+$$
+
+Different values of the parameter $\lambda$ are used in order to see how the results depend on it. From the theoretical point of view, we know that the term $(1-\lambda)r_{t-1}^2$ determines the reaction of volatility to market events, i.e. the larger the term $(1-\lambda)$ the larger the reaction in the volatility stemming from yesterday's return. Moreover, the term $\lambda\sigma_{t-1}^2$ determines the persistence in volatility. In other terms, it decides how much of yesterday's volatility is allowed to persist to today's volatility: A larger value of $\lambda$ gives larger persistence. Thus, the EWMA model gives a trade-off between persistence and reaction in the volatility, depending on the value of $\lambda$. 
 
 ```{r}
 vol.ewma0.95 <- EWMA(rendixic^2, lambda = 0.05) # note: in EWMA lambda is actually 1-lambda
@@ -553,31 +566,37 @@ vol.ewma0.25 <- EWMA(rendixic^2, lambda = 0.75) # note: in EWMA lambda is actual
 #plot(Fechas, vol.ewma0.25, type="l", ylab='variance', xlab = "time", main='EWMA 0.25')
 
 par(mfrow=c(2,2), cex=0.6, mar=c(2,2,3,1))
-plot(Fechas, vol.ewma0.95, type="l", ylab='variance', main='EWMA 0.95')
-plot(Fechas, vol.ewma0.75, type="l", ylab='variance', main='EWMA 0.75')
-plot(Fechas, vol.ewma0.5, type="l", ylab='variance', main='EWMA 0.5')
-plot(Fechas, vol.ewma0.25, type="l", ylab='variance', main='EWMA 0.25')
+plot(Fechas, vol.ewma0.95, type="l", ylab='variance', main=TeX(r'(EWMA, $\lambda = 0.95$)', bold = TRUE))
+plot(Fechas, vol.ewma0.75, type="l", ylab='variance', main=TeX(r'(EWMA, $\lambda = 0.75$)', bold = TRUE))
+plot(Fechas, vol.ewma0.5, type="l", ylab='variance', main=TeX(r'(EWMA, $\lambda = 0.5$)', bold = TRUE))
+plot(Fechas, vol.ewma0.25, type="l", ylab='variance', main=TeX(r'(EWMA, $\lambda = 0.25$)', bold = TRUE))
+```
 
+As we can see from the plots above, the larger values of $\lambda$ give smoother plots, since the persistence is larger, while the smaller values of $\lambda$ give a more reactive or non-smooth volatility pattern, since the persistence of the volatility is much lower in these cases. Comparing to the results obtained when using the historical volatility, all the volatility patterns obtained with EWMA are more non-smooth than the former, being most similar to the 1 month moving average. Note also that the choice of $\lambda$ seems somewhat arbitrary in this case (similar to the choice of $k$ for historical volatility), as it is difficult to be certain about the best choice of the parameter. 
+
+Doing a quick comparison between these two models and the results from the EGARCH model, it looks like the EWMA model with $\lambda = 0.75$ gives a relatively similar volatility pattern, whereas the 1 month moving average (which is the one among the four models that is most similar to the results from EGARCH) is lacking in comparison. 
+
+```{r}
 par(mfrow=c(1,1), cex=0.6, mar=c(2,2,3,1))
 variance <- v^2
-comparison <- data.frame(variance, vol.ewma0.95)
-ts.plot(comparison,gpars= list(ylab=",", col = 1:ncol(comparison)))
-legend("topleft", c("E-GARCH","EWMA 0.95"), lty=c(1,1), col=c("black","red"))
+comparison <- data.frame(variance, vol.ewma0.75)
+ts.plot(comparison,gpars= list(ylab=",", col = 1:ncol(comparison), xaxt = "n"))
+legend("topleft", c("E-GARCH",TeX(r'(EWMA, $\lambda = 0.75$)')), lty=c(1,1), col=c("black","red"))
+axis(1, at=1:6)#, labels=c(2012, 2014, 2016, 2018, 2020, 2022))
 
 variance2 <- variance[21:2555]
 volhist <- vol.hist20[1:2535]
 comparison <- data.frame(variance2, volhist)
-ts.plot(comparison,gpars= list(ylab=",", col = 1:ncol(comparison)))
+ts.plot(comparison,gpars= list(ylab=",", col = 1:ncol(comparison), xaxt = "n"))
 legend("topleft", c("E-GARCH","1 month moving average"), lty=c(1,1), col=c("black","red"))
+axis(1, at=1:6)#, labels=c(2012, 2014, 2016, 2018, 2020, 2022))
 ```
-
-Discussion: 
 
 NOTE THAT THE TIMES ON THE X-AXIS ARE FUCKED UP. TRY TO FIX THIS LATER!
 
 # Calculation and Interpretation of VaR 
 
-Here we will calculate and interpret the Value at Risk (VaR) using estimated volatilities from several different models. 
+Here we will calculate and interpret the Value at Risk (VaR) using estimated volatilities from several different models. First we use the variance-covariance method, calculating the VaR with a static forecast 1 ahead, using the EGARCH model. Remember that this was the first type of forecast we did in section 6. 
 
 ```{r VaR, cache = T}
 # Calculating VaR based on the first type of prediction, without rolling window.
@@ -585,19 +604,94 @@ forc <- ugarchforecast(m.egarch, n.ahead=1, n.roll= 0)
 show(forc)
 var5.garch <- - qnorm(0.95) * 0.01791
 show(var5.garch)
+```
 
+This value means that, with a confidence level of $95\%$, the largest expected loss for tomorrow in our index is $\approx 2.95 \%$. In other terms, the probability of the return tomorrow being lower than $-2.95\%$ is $5\%$. 
+
+Next we calculate the VaR with a rolling window dynamic forecast, using the EGARCH model, with a sinificance level of $5\%$.
+
+```{r, cache = T}
 # Calculating VaR based on the second type of prediction, with rolling window. 
 var.t <-  ugarchroll(spec.egarch, data = rendixic, n.ahead = 1, forecast.length = 50, refit.every = 10,  refit.window = "rolling",
                    calculate.VaR = TRUE, VaR.alpha = 0.05)
 plot(var.t, which = 4, VaR.alpha = 0.05)
 report(var.t, VaR.alpha = 0.05)
-
-#####################################
-#comparaci?n in sample ##
-##################################
-
 ```
 
+The report above shows that our set level of $5\%$ significance is not kept, i.e. that the largest expected loss cannot be quantified at the $5\%$ significance level. Instead, the VaR is estimated to be $14\%$, which means that the probability of the return the next day being lower than the VaR is $ \approx 14\%$ instead of $5\%$. In practice, this means that the company should set aside more funds than expected, in order to cover the significance level of $5\%$. 
+
+LITT USIKKER PÅ DENNE TOLKNINGEN!
+
+Next, we calculate the VaR using an EWMA model with $\lambda = 0.75$. 
+
+```{r ewma/VaR, cache = T}
+# With EWMA calculated with lambda=0.75
+var5.ewma  <-  - qnorm(0.95) * sqrt(vol.ewma0.75)
+var5.egarch <- - qnorm(0.95) * (v)
+var1.ewma  <-  - qnorm(0.99) * sqrt(vol.ewma0.75)
+var1.egarch <-  - qnorm(0.99) * v
+
+
+par(mfrow=c(2,2), cex=0.6, mar=c(2,2,3,1))
+plot(Fechas, rendixic,type="l", main ="5% VaR EWMA")
+lines(Fechas, var5.ewma, col = "blue")
+plot(Fechas, rendixic,type="l", main ="5% VaR E-GARCH(1,1)")
+lines(Fechas,var5.egarch, col ="blue")
+plot(Fechas, rendixic,type="l", main ="1% VaR EWMA")
+lines(Fechas, var1.ewma, col = "red")
+plot(Fechas, rendixic, type="l", main ="1% VaR E-GARCH(1,1)")
+lines(Fechas, var1.egarch, col ="red")
+```
+
+HVA ER DETTE?
+
+```{r, eval = F}
+# Copied from aplication_VaR_2022.R
+#calculate the fraction of sample where loss exceed both 1% and 5% VaR for EWMA and GjR-GARCH(1,1)
+sum(rendibex < var5.ewma)/length(rendibex) # fraction of sample where loss exceeds 5% VaR for EWMA
+
+sum(rendibex < var5.gjrgarch)/length(rendibex) # fraction of sample where loss exceeds 5% VaR for gjrGARCH(1,1)
+
+sum(rendibex < var1.ewma)/length(rendibex) # fraction of sample where loss exceeds 1% VaR for EWMA
+
+sum(rendibex < var1.gjrgarch)/length(rendibex) # fraction of sample where loss exceeds 1% VaR for gjrGARCH(1,1)
+# vemos que es parecido o igual en ambos casos (con lambda=0.95)
+
+#con EWMA calculada CON LAMBDA=0.75
+vol.ewma0.75 <- EWMA(rendibex^2, lambda = 0.25) # note: in EWMA lambda is actually 1-lambda
+
+var5.ewma  <-  - qnorm(0.95) * sqrt(vol.ewma0.75)
+var5.gjrgarch <-  - qnorm(0.95) * (v)
+var1.ewma  <-  - qnorm(0.99) * sqrt(vol.ewma0.75)
+var1.gjrgarch <-  - qnorm(0.99) * v
+
+par(mfrow=c(2,2), cex=0.6, mar=c(2,2,3,1))
+plot(Fechas, rendibex,type="l", main ="5% VaR EWMA")
+lines(Fechas, var5.ewma, col = "blue")
+plot(Fechas, rendibex,type="l", main ="5% VaR GJR-GARCH(1,1)")
+lines(Fechas, var5.gjrgarch, col ="blue")
+plot(Fechas, rendibex,type="l", main ="1% VaR EWMA")
+lines(Fechas, var1.ewma, col = "red")
+plot(Fechas, rendibex, type="l", main ="1% VaR GJR-GARCH(1,1)")
+lines(Fechas, var1.gjrgarch, col ="red")
+
+#es m?s suave el VaR calculado con GJR-Garch 
+
+#calculate the fraction of sample where loss exceed both 1% and 5% VaR for EWMA and GJRGARCH(1,1)
+sum(rendibex < var5.ewma)/length(rendibex) # fraction of sample where loss exceeds 5% VaR for EWMA
+
+sum(rendibex < var5.gjrgarch)/length(rendibex) # fraction of sample where loss exceeds 5% VaR for gjrGARCH(1,1)
+
+sum(rendibex < var1.ewma)/length(rendibex) # fraction of sample where loss exceeds 1% VaR for EWMA
+
+sum(rendibex < var1.gjrgarch)/length(rendibex) # fraction of sample where loss exceeds 1% VaR for gjrGARCH(1,1)
+
+#?COMO ELEGIMOS LAMBDA? CON GARCH LOS DATOS HABLAN
+#Ewma con lambda 0.75 sobreestima el riesgo y la compa?ia estar?a dedicando demasiados recursos al capital regulatorio m?nimo.
+```
+
+
+HVORFOR IKKE FORECASTS SOM BLIR BRUKT HER?
 
 # Multivariate DCC
 
@@ -605,6 +699,18 @@ In order to solve this problem I have chosen the stock of Stratus Properties Inc
 
 ```{r}
 # Get STRS stock data and redo analysis for this stock. 
+STRS <- read.csv("STRS.csv")
+head(STRS)
+any(is.na(STRS))
+str(STRS)
+strs <- STRS[,6]
+head(strs)
+
+date <- as.Date(STRS$Date,"%d/%m/%Y")  
+
+# Gr?fico de la serie temporal
+#plot(date, strs,type="l",col="blue", main="Prices")
+#legend("bottomleft", c("Austria","Grecia"), lty=c(1,1), col=c("blue","red"))
 ```
 
 
