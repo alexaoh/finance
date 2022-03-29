@@ -369,7 +369,7 @@ Box.test(residuals2,lag=5,type='Ljung')
 Box.test(residuals2,lag=15,type='Ljung')
 ```
 
-The argument is further substantiated by the Ljung-Box tests, where only the first result is shown, since they all lead to the conclusion that the squared residuals are correlated. Thus, it is relevant to identify and estimate a model for the volatility. Joint estimation of the mean and volatility equations, for different types of models, is done in the following. 
+The argument is further substantiated by the Ljung-Box tests, where only the first result is shown, since they all lead to the conclusion that the squared residuals are correlated, because the null hypothesis is rejected. Thus, it is relevant to identify and estimate a model for the volatility. Joint estimation of the mean and volatility equations, for different types of models, is done in the following. 
 
 Now over to estimation of GARCH models for the variance of the returns. First we estimate a ARMA(2,2)-GARCH(1,1) with a t-student distribution. WHY CHOOSE A T-STUDENT OVER A NORMAL (OR VICE VERSA)?
 
@@ -380,9 +380,9 @@ spec1 <- ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(1,1))
 m.AIC <- -6.4605
 ```
 
-We observe that all the parameter estimates are significant to a 5\% significance level. Moreover, we note that the condition of positivity holds, because $\hat{\alpha}_1 > 0$ and $\hat{\beta}_1 > 0$, where we follow the standard statistical notation of a hat indicating an estimate. Also, we note that the condition of stationarity holds, because $\hat{\alpha}_1 + \hat{\beta}_1 < 1$. We record the AIC of this first model in order to compare to other models later. The residual plots below show that the residuals do not present any autocorrelation (before moving to around 15 lags, which is a large number of lags), which indicates that this model has modeled the data in a sufficient or reasonable way. However, note that the p-values of the `Weighted Ljung-Box Test on Residuals` are large, which means we cannot reject the null hypothesis of no serial correlation for the different lags. We will keep this is mind as a downfall of this first proposed model. 
+We observe that all the parameter estimates are significant to a 5\% significance level. Moreover, we note that the condition of positivity holds, because $\hat{\alpha}_1 > 0$ and $\hat{\beta}_1 > 0$, where we follow the standard statistical notation of a hat indicating an estimate. Also, we note that the condition of stationarity holds, because $\hat{\alpha}_1 + \hat{\beta}_1 < 1$. We record the AIC of this first model in order to compare to other models later. The ACF of the residuals, plotted below, shows that the residuals do not present any autocorrelation (before moving to around 15 lags, which is a large number of lags), which indicates that this model has modeled the data in a sufficient or reasonable way. However, note that the $p$-values of the `Weighted Ljung-Box Test on Standardized Residuals` are quite large, which means we cannot reject the null hypothesis of no serial correlation for the different lags. This can be noted as a disadvantage of the first proposed model. 
 
-```{r}
+```{r, echo = F}
 par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
 plot(m, which = 10)
 plot(m, which = 11)
@@ -404,7 +404,7 @@ spec.mgjr <- ugarchspec(variance.model=list(model="gjrGARCH", garchOrder = c(1,1
 (mgjr <- ugarchfit(spec = spec.mgjr, data = rendixic))
 ```
 
-The stationarity conditions holds, since $\hat{\alpha}_1 + \hat{\beta}_1 + \frac12 \hat{\gamma} \approx$ `r round(0.823974 + 0.5*0.260477, 3)` $<1$. However, the positivity condition does not seem to hold, since $\hat{\alpha} = 0 \ngeq 0$. Thus, the GJR-GARCH based model will not be used, even though the AIC is lower and the residuals do not present any autocorrelation according to plots. Moreover, the several of the ARMA-parameter coefficient estimates are not significant to a reasonable level, which is the case no matter what `armaOrder` is use in the estimation. 
+The stationarity conditions hold, since $\hat{\alpha}_1 + \hat{\beta}_1 + \frac12 \hat{\gamma} \approx$ `r round(0.823974 + 0.5*0.260477, 3)` $<1$. However, the positivity condition does not seem to hold, since $\hat{\alpha} = 0 \ngeq 0$. Thus, the GJR-GARCH based model will not be used, even though the AIC is lower and the residuals do not present any autocorrelation according to plots. Moreover, the several of the ARMA-parameter coefficient estimates are not significant to a reasonable level, which is found to be the case no matter what `armaOrder` is used in the estimation. 
 
 <!-- The residuals for the second model are plotted below.  -->
 
@@ -432,60 +432,56 @@ spec.egarch <- ugarchspec(variance.model = list(model="eGARCH", garchOrder = c(1
 m.egarch.AIC <- -6.4958
 ```
 
-All estimated parameters are significant to a level of $\alpha = 0.05$. For this model, we do not require positivity of the GARCH parameter estimates. WHAT ABOUT STATIONARITY, DO WE REQUIRE THIS? The residual plots below do not show any autocorrelation before moving to a large number of lags, which is a good sign that the model has modelized the data adequately. Moreover, the AIC is smaller for this model compared to the first proposed model. Thus, I would prefer this model over the first model. Note that $\gamma > 0$, which should mean that the positive news have a larger effect on the news compared to the negative news, which does not make sense here, when looking at the news impact curve. THIS IS STRANGE, I DO NOT UNDERSTAND THIS!? ASK PROFE!
+All estimated parameters are significant to a level of $\alpha = 0.05$. For this model, we do not require positivity of the GARCH parameter estimates. WHAT ABOUT STATIONARITY, DO WE REQUIRE THIS? The residual plots below do not show any autocorrelation before moving to a large number of lags, which is a good sign that the model has modelized the data adequately. Moreover, the AIC for this model is the smallest value thus far. Because of this, we would prefer this model. Note that $\gamma > 0$, which should mean that the positive news have a larger effect on the news compared to the negative news, which does not make sense here, when looking at the news impact curve. THIS IS STRANGE, I DO NOT UNDERSTAND THIS!? ASK PROFE!
 DETTE ER MOTSATT DEFINERT I R VIRKER DET SOM! EN POSITIV GAMMA ER DET SAMME SOM EN NEGATIV I LIGNINGENE, I.E. EN POSITIV GAMMA GIR STØRRE EFFEKT FOR DE NEGATIVE NYHETENE ENN DE POSITIVE, SOM VI SER AV PLOTTET!
 
-```{r}
+```{r, echo = F}
 par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
 plot(m.egarch, which = 10)
 plot(m.egarch, which = 11)
 par(mfrow=c(1,1),font=2,font.lab=4,font.axis=2,las=1)
-plot(m.egarch, which = 12)
 ```
 
 Next, we fit and ARMA(2,2)-IGARCH model. 
 
 ```{r}
-spec.igarch <- ugarchspec(variance.model=list(model="iGARCH", garchOrder = c(1,1)), mean.model=list(armaOrder=c(2,2)), distribution.model = "std")
+spec.igarch <- ugarchspec(variance.model=list(model="iGARCH", garchOrder = c(1,1)), 
+                    mean.model=list(armaOrder=c(2,2)), distribution.model = "std")
 (m.igarch <- ugarchfit(spec=spec.igarch,data=rendixic))
 m.igarch.AIC <- -6.4602
 ```
 
-The residuals for the iGARCH look alright, but the AIC is lower for the EGARCH based model. 
+The residuals for the iGARCH look alright, but the AIC is lower for the EGARCH based model. Hence, I will not bother considering the other properties. 
 
-```{r}
+```{r, echo = F}
 par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
 plot(m.igarch, which = 10)
 plot(m.igarch, which = 11)
 ```
 
-Thus, I would conclude that the best model out of the three fitted is the EGARCH based model. 
+Thus, I would conclude that the best model out of the four fitted is the EGARCH based model, since it satisfies its conditions and has the lowest AIC. 
 
 ## Grafic and Interpretation of the Estimated Series of Volatility
 
-The estimated (anualized) series of volatility for the ARMA(2,2)-EGARCH model is shown below, together with the returns. 
+The estimated (annualized) series of volatility for the ARMA(2,2)-EGARCH model is plotted, alongside the returns and the absolute values of the returns. 
 
-```{r, warning=FALSE}
+```{r, warning=FALSE, echo = F}
 v <- sigma(m.egarch) 
 v_anualized <- (250)^0.5*v
-tibble("date" = as.Date(Ixic[-c(1),1]), "v_anualized" = v_anualized[,1], rendixic) %>% 
-gather(key = distribution, value = value, -date)%>% 
-ggplot(aes(x = date, y = value)) +
+returnabs <- abs(rendixic)
+tibble("Date" = as.Date(Ixic[-c(1),1]), "Annualized-Vol." = v_anualized[,1], "Returns" = rendixic, "Abs.-Returns" = returnabs) %>% 
+gather(key = distribution, value = value, -Date)%>% 
+ggplot(aes(x = Date, y = value)) +
   geom_line() +
   theme_minimal() +
   scale_x_date(date_labels = "%Y %b %d", date_breaks = "1 year") +
-  facet_wrap(~distribution, nrow = 2, scales = "free")
+  facet_grid(rows = vars(distribution), scales = "free")
 ```
 
-The general behaviour seems to match relatively well, i.e. the movements in the two plots coincide relatively well. Days with larger (absolute) returns go together with the days with larger estimated volatilities. 
+The general behaviour seems to match relatively well, i.e. the movements in the plots coincide relatively well. Days with larger (absolute) returns coincide with days with larger estimated volatilities. Note that we cannot compare the absolute values in plot however. 
 
-A comparison of the estimated volatilities and the absolute value of the returns is given below. 
-
-```{r, warning = F}
+```{r, warning = F, echo = F, eval = F}
 returnsabs <- abs(rendixic)
-#par(mfrow=c(2,1),font=2,font.lab=4,font.axis=2,las=1)  # Show volatility and returns
-#plot(v_anualized)
-#plot(returnsabs) 
 tibble("date" = as.Date(Ixic[-c(1),1]), "v_anualized" = v_anualized[,1], returnsabs) %>% 
 gather(key = distribution, value = value, -date)%>% 
 ggplot(aes(x = date, y = value)) +
@@ -495,16 +491,12 @@ ggplot(aes(x = date, y = value)) +
   facet_wrap(~distribution, nrow = 2, scales = "free")
 ```
 
-They all seem to follow a similar pattern, which is a good sign, even though we cannot compare the absolute values of the data shown in the plots. 
-
-```{r}
+```{r, echo = F, eval = F}
 par(mfrow=c(1,1),font=2,font.lab=4,font.axis=2,las=1)
 time <-  data.frame(returnsabs, v)
 ts.plot(time,gpars= list(xlab="time", ylab=",", col = 1:ncol(time)))
 legend("topleft", c("returnsabs","v"), lty=c(1,1), col=c("black","red"), cex=0.6)
 ```
-
-THESE ARE ALL JUST DIFFERENT WAYS OF SEEING THE SAME RESULTS, REMOVE SOME OF THEM LATER!
 
 ## Grafic and Interpretation of the News Impact Curve
 
@@ -513,27 +505,30 @@ The news impact curve for our chosen model is shown below. Since the standard GA
 ```{r}
 par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
 nie <- newsimpact(z = NULL, m.egarch)
-plot(nie$zx, nie$zy, ylab=nie$yexpr, xlab=nie$xexpr, type="l", main = "News Impact Curve")
+plot(nie$zx, nie$zy, ylab=nie$yexpr, xlab=nie$xexpr, type="l", main = "News Impact Curve EGARCH")
 ni <- newsimpact(z = NULL, m)
-plot(ni$zx, ni$zy, ylab=ni$yexpr, xlab=ni$xexpr, type="l", main = "News Impact Curve")
+plot(ni$zx, ni$zy, ylab=ni$yexpr, xlab=ni$xexpr, type="l", main = "News Impact Curve sGARCH")
 ```
 
-The EGARCH based model takes the leverage effect into effect, which is the news impact curve is non-symmetric. This curve indicates that the volatility is impacted to a higher degree by negative news compared to the impact on the volatility following positive news, which seems to be increasingly small as the positivity of the news increases THIS IS VERY STRANGE!!
+The EGARCH based model considers the leverage effect, which is why the news impact curve is non-symmetric. This curve indicates that the volatility is impacted to a higher degree by negative news compared to the impact on the volatility following positive news, which decreases as the positivity of the news increases THIS IS VERY STRANGE!! ASK PROFE!
 
 ## Volatility Predictions and Interpretations
 
-Below volatility are predicted while leaving out the last 10 observations when estimating the ARMA(2,2)-EGARCH model. The prediction is done 10 steps ahead into the future, first statically. 
+Volatility is predicted while leaving out the last 10 observations when estimating the ARMA(2,2)-EGARCH model. The prediction is done 10 steps ahead into the future, first statically. 
 
 ```{r}
-(m.egarch.pred <- ugarchfit(spec = spec.egarch, data = rendixic, out.sample = 10))
+m.egarch.pred <- ugarchfit(spec = spec.egarch, data = rendixic, out.sample = 10)
 forc <- ugarchforecast(m.egarch.pred, n.ahead=10, n.roll= 0) 
-#show(forc)
-#fpm(forc)
+```
 
+```{r, echo = F, fig.height = 7}
 par(mfrow=c(2,1),font=2,font.lab=4,font.axis=2,las=1)
 plot(forc, which = 1)
 plot(forc, which = 3)
-uncvariance(m.egarch.pred)^0.5
+```
+
+```{r, echo = F}
+cat("Long Run Unconditional Variance: ",uncvariance(m.egarch.pred)^0.5)
 ```
 
 As we can see from the uppermost plot, these static predictions (for the mean) 10 steps ahead are relatively useless. ALSO LOOKS LIKE THE FORECAST OF THE VARIANCE WILL GO TOWARDS THE UNCONDITIONAL VARIANCE. NOT SURE IN WHAT SITUATIONS THIS SHOULD HAPPEN THOUGH, ASK PROFE PERHAPS!
@@ -542,29 +537,35 @@ Next, let us predict 10 steps into the future with a rolling window. We reestima
 
 ```{r}
 forc2 <- ugarchforecast(m.egarch.pred, n.ahead=1, n.roll= 10)
-#fpm(forc2)
-#sigma(forc2) 
-#fitted(forc2)
+```
 
+```{r, echo = F, fig.height = 7}
 par(mfrow=c(2,1),font=2,font.lab=4,font.axis=2,las=1)
 plot(forc2, which = 2)
 plot(forc2, which = 4)
 ```
 
-The predictions are still lousy, as can be seen from the predictions of the mean in the uppermost plot. However, from the second plot, it looks like the predictions of the variance are somewhat following the same movements as the absolute value of the series; when the absolute value of the series hits a spike, the predictions of the volatility increase as well. 
+```{r, echo = F}
+cat("Long Run Unconditional Variance: ",uncvariance(m.egarch.pred)^0.5)
+```
 
-The same type of movement can be seen when predicting with a rolling window 100 steps into the future, where the results of this prediction is shown below. 
+The predictions are still lousy, as can be seen from the predictions of the mean in the uppermost plot. However, from the second plot, it looks like the predictions of the variance are somewhat following similar movements as the absolute value of the series; when the absolute value of the series hits a spike, the predictions of the volatility increase as well. 
+
+The same type of movement can be seen when predicting with a rolling window 100 steps into the future, as done next. 
 
 ```{r}
-(m.egarch.pred2 <- ugarchfit(spec = spec.egarch, data = rendixic, out.sample = 100))
+m.egarch.pred2 <- ugarchfit(spec = spec.egarch, data = rendixic, out.sample = 100)
 forc3 <- ugarchforecast(m.egarch.pred2, n.ahead=1, n.roll= 100)
-#fpm(forc3)
-#sigma(forc3) 
-#fitted(forc3)
+```
 
+```{r, echo = F, fig.height = 7}
 par(mfrow=c(2,1),font=2,font.lab=4,font.axis=2,las=1)
 plot(forc3, which = 2)
 plot(forc3, which = 4)
+```
+
+```{r, echo = F}
+cat("Long Run Unconditional Variance: ",uncvariance(m.egarch.pred2)^0.5)
 ```
 
 ## Calculations via Historical Volatility and EWMA
@@ -575,37 +576,35 @@ $$
 \sigma_t^2 = \frac1k\sum_{i=1}^kr_{t-1}^2.
 $$
 
-```{r}
-par(mfrow=c(1,1),font=2,font.lab=4,font.axis=2,las=1)
+The results for different time periods $k$ are shown below. 
+
+```{r, echo = F}
 Fechas<-as.Date(Ixic[,1])
 Fechas<-Fechas[-1] # Eliminate the first date, since it was lost when calculating returns. 
 
 vol.hist20 <- SMA(rendixic^2, n=20) 
 Fechas2<-Fechas[21:2556] 
-#plot(Fechas2, vol.hist20, type="l", ylab='variance', xlab="time", main='1 month moving average')
 
 vol.hist80 <- SMA(rendixic^2, n=80) 
 Fechas3<-Fechas[81:2556]
-#plot(Fechas3, vol.hist80, type="l", ylab='variance', xlab="time",main='4 month moving average')
 
 vol.hist160 <- SMA(rendixic^2, n=160) 
 Fechas4<-Fechas[161:2556]
-#plot(Fechas4, vol.hist160, type="l", ylab='variance', xlab="time",main='8 month moving average')
 
 vol.hist240 <- SMA(rendixic^2, n=240) 
 Fechas5<-Fechas[241:2556]
-#plot(Fechas5, vol.hist240, type="l", ylab='variance', xlab="time",main='1 year moving average')
  
 par(mfrow=c(2,2), cex=0.6, mar=c(2,2,3,1))
 plot(Fechas2, vol.hist20, type="l", ylab='variance', xlab="time", main='1 month moving average')
 plot(Fechas3, vol.hist80, type="l", ylab='variance', xlab="time", main='4 month moving average')
 plot(Fechas4, vol.hist160, type="l", ylab='variance', xlab="time", main='8 month moving average')
 plot(Fechas5, vol.hist240, type="l", ylab='variance', xlab="time", main='1 year moving average')
+par(mfrow=c(1,1),font=2,font.lab=4,font.axis=2,las=1)
 ```
 
 As is apparent from the plots, the volatility pattern is highly dependent on the $k$, i.e. the number of observations used to calculate the moving average. Moreover, we can see that the results are greatly affected by extreme values, especially when $k$ is small, which is clearly seen in the results for the 1 month moving average. The volatility pattern is smoother when $k$ is larger. Which of these values for $k$ gives the "best" results? This is difficult to answer. 
 
-The Exponentially Weighted Moving Average (EWMA) model is used to calculate volatility
+Following the calculations from historical volatility, the Exponentially Weighted Moving Average (EWMA) model is used to calculate volatility
 
 $$
 \sigma_t^2 = (1-\lambda)r_{t-1}^2 + \lambda\sigma_{t-1}^2 = (1-\lambda) \sum_{i = 1}^\infty\lambda^{i-1}r_{t-1}^2, \hspace{0.5em} 0<\lambda<1.
@@ -613,18 +612,13 @@ $$
 
 Different values of the parameter $\lambda$ are used in order to see how the results depend on it. From the theoretical point of view, we know that the term $(1-\lambda)r_{t-1}^2$ determines the reaction of volatility to market events, i.e. the larger the term $(1-\lambda)$ the larger the reaction in the volatility stemming from yesterday's return. Moreover, the term $\lambda\sigma_{t-1}^2$ determines the persistence in volatility. In other terms, it decides how much of yesterday's volatility is allowed to persist to today's volatility: A larger value of $\lambda$ gives larger persistence. Thus, the EWMA model gives a trade-off between persistence and reaction in the volatility, depending on the value of $\lambda$. 
 
-```{r}
+Some results from calculating the volatility using EWMA with different values of $\lambda$ are plotted. 
+
+```{r, echo = F}
 vol.ewma0.95 <- EWMA(rendixic^2, lambda = 0.05) # note: in EWMA lambda is actually 1-lambda
-#plot(Fechas, vol.ewma0.95, type="l", ylab='variance', xlab = "time", main='EWMA 0.95')
-
 vol.ewma0.75 <- EWMA(rendixic^2, lambda = 0.25) # note: in EWMA lambda is actually 1-lambda
-#plot(Fechas, vol.ewma0.75, type="l", ylab='variance', xlab = "time", main='EWMA 0.75')
-
 vol.ewma0.5 <- EWMA(rendixic^2, lambda = 0.5) # note: in EWMA lambda is actually 1-lambda
-#plot(Fechas, vol.ewma0.5, type="l", ylab='variance', xlab = "time", main='EWMA 0.5')
-
 vol.ewma0.25 <- EWMA(rendixic^2, lambda = 0.75) # note: in EWMA lambda is actually 1-lambda
-#plot(Fechas, vol.ewma0.25, type="l", ylab='variance', xlab = "time", main='EWMA 0.25')
 
 par(mfrow=c(2,2), cex=0.6, mar=c(2,2,3,1))
 plot(Fechas, vol.ewma0.95, type="l", ylab='variance', main=TeX(r'(EWMA, $\lambda = 0.95$)', bold = TRUE))
@@ -633,11 +627,11 @@ plot(Fechas, vol.ewma0.5, type="l", ylab='variance', main=TeX(r'(EWMA, $\lambda 
 plot(Fechas, vol.ewma0.25, type="l", ylab='variance', main=TeX(r'(EWMA, $\lambda = 0.25$)', bold = TRUE))
 ```
 
-As we can see from the plots above, the larger values of $\lambda$ give smoother plots, since the persistence is larger, while the smaller values of $\lambda$ give a more reactive or non-smooth volatility pattern, since the persistence of the volatility is much lower in these cases. Comparing to the results obtained when using the historical volatility, all the volatility patterns obtained with EWMA are more non-smooth than the former, being most similar to the 1 month moving average. Note also that the choice of $\lambda$ seems somewhat arbitrary in this case (similar to the choice of $k$ for historical volatility), as it is difficult to be certain about the best choice of the parameter. 
+As we can see from the plots, the larger values of $\lambda$ give smoother plots, since the persistence is larger, while the smaller values of $\lambda$ give a more reactive or non-smooth volatility pattern, since the persistence of the volatility is much lower in these cases. Comparing to the results obtained when using the historical volatility, all the volatility patterns obtained with EWMA are more non-smooth than the former, being most similar to the 1 month moving average. Note also that the choice of $\lambda$ seems somewhat arbitrary in this case (similar to the choice of $k$ for historical volatility), as it is difficult to be certain about the best choice of the parameter. 
 
 Doing a quick comparison between these two models and the results from the EGARCH model, it looks like the EWMA model with $\lambda = 0.75$ gives a relatively similar volatility pattern, whereas the 1 month moving average (which is the one among the four models that is most similar to the results from EGARCH) is lacking in comparison. 
 
-```{r}
+```{r, echo = F}
 par(mfrow=c(1,1), cex=0.6, mar=c(2,2,3,1))
 variance <- v^2
 comparison <- data.frame(variance, vol.ewma0.75)
@@ -653,7 +647,7 @@ legend("topleft", c("E-GARCH","1 month moving average"), lty=c(1,1), col=c("blac
 axis(1, at=1:6)#, labels=c(2012, 2014, 2016, 2018, 2020, 2022))
 ```
 
-NOTE THAT THE TIMES ON THE X-AXIS ARE FUCKED UP. TRY TO FIX THIS LATER!
+NOTE THAT THE TIMES ON THE X-AXIS ARE FUCKED UP. TRY TO FIX THIS LATER! THIS IS THE CASE SEVERAL PLACES!
 
 ## Calculation and Interpretation of VaR 
 
@@ -673,8 +667,9 @@ Next we calculate the VaR with a rolling window dynamic forecast, using the EGAR
 
 ```{r, cache = T}
 # Calculating VaR based on the second type of prediction, with rolling window. 
-var.t <-  ugarchroll(spec.egarch, data = rendixic, n.ahead = 1, forecast.length = 50, refit.every = 10,  refit.window = "rolling",
-                   calculate.VaR = TRUE, VaR.alpha = 0.05)
+var.t <-  ugarchroll(spec.egarch, data = rendixic, n.ahead = 1, forecast.length = 50, 
+              refit.every = 10,  refit.window = "rolling",
+              calculate.VaR = TRUE, VaR.alpha = 0.05)
 plot(var.t, which = 4, VaR.alpha = 0.05)
 report(var.t, VaR.alpha = 0.05)
 ```
@@ -1020,7 +1015,10 @@ STEMMER DET AT DET ER KORRELASJONEN SOM ENDRES I NEWS IMPACT CURVE OVER, OG IKKE
 
 * Generelt: Er hun interessert i å se kode i rapporten, eller bare resulater med diskusjon? Hvor mye av output fra tester etc kan sløyfes?
 * Correct to talk about returns, when they are calculated as diff(log(IXIC))?
-* Spør om ekstra plot under 3.5!?
+* Spør om ekstra plot under 3.5!? Har (rendixic - mean(rendixic))^2 noe sammenheng med ACF av residuals^2? Estimador insesgado?
 * In GARCH models: WHY CHOOSE A T-STUDENT OVER A NORMAL (OR VICE VERSA)?
+* Is positivity needed for GJR-GARCH as well? Because this is used to reject the possiblity of using GJR-GARCH as a model for the variance!
 * Positivity and stationarity assumptions for EGARCH? Looks like positivity is not needed! But is stationarity an assumption that needs to be fulfilled in the model?
-* GÅ GJENNOM OPPGAVEN FOR Å FINNE FLERE SPØRSMÅL!
+* Value of gamma in EGARCH: Opposite of how we defined it? Se kommentarer i selve oppgaven (side 19/20).
+* News impact curve for EGARCH: Veldig merkelig kurve, noe galt? Eller er dette noe som kan skje?
+* When does the predicted volatility go towards the unconditional variance?
