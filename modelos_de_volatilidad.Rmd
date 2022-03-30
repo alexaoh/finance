@@ -651,43 +651,47 @@ NOTE THAT THE TIMES ON THE X-AXIS ARE FUCKED UP. TRY TO FIX THIS LATER! THIS IS 
 
 ## Calculation and Interpretation of VaR 
 
-Here we will calculate and interpret the Value at Risk (VaR) using estimated volatilities from several different models. First we use the variance-covariance method, calculating the VaR with a static forecast 1 ahead, using the EGARCH model. Remember that this was the first type of forecast we did in section 6. 
+Here we will calculate and interpret the Value at Risk (VaR) using estimated volatilities from several different models. First we use the variance-covariance method, calculating the VaR with a static forecast one time ahead, using the EGARCH model.
 
 ```{r VaR, cache = T}
-# Calculating VaR based on the first type of prediction, without rolling window.
 forc <- ugarchforecast(m.egarch, n.ahead=1, n.roll= 0)
 show(forc)
 var5.garch <- - qnorm(0.95) * 0.01791
-show(var5.garch)
+cat("VaR: ", show(var5.garch))
 ```
 
-This value means that, with a confidence level of 95%, the largest expected loss for tomorrow in our index is $\approx 2.95$%. In other terms, the probability of the return tomorrow being lower than -2.95% is 5%. 
+This value means that, with a confidence level of 95\%, the largest expected loss for tomorrow in our index is $\approx 2.95$\%. In other terms, the probability of the return tomorrow being lower than -2.95\% is 5\%. 
 
-Next we calculate the VaR with a rolling window dynamic forecast, using the EGARCH model, with a significance level of 5%.
+Next we calculate the VaR with a rolling window dynamic forecast, using the EGARCH model, with a significance level of 5\%.
 
 ```{r, cache = T}
-# Calculating VaR based on the second type of prediction, with rolling window. 
 var.t <-  ugarchroll(spec.egarch, data = rendixic, n.ahead = 1, forecast.length = 50, 
               refit.every = 10,  refit.window = "rolling",
               calculate.VaR = TRUE, VaR.alpha = 0.05)
+```
+
+```{r, echo = F}
 plot(var.t, which = 4, VaR.alpha = 0.05)
+```
+
+```{r}
 report(var.t, VaR.alpha = 0.05)
 ```
 
-The report above shows that our set level of 5% significance is not kept, i.e. that the largest expected loss cannot be quantified at the 5% significance level. Instead, the VaR is estimated to be 14%, which means that the probability of the return the next day being lower than the VaR is $\approx 14$% instead of 5%. In practice, this means that the company should set aside more funds than expected, in order to cover the significance level of 5%. 
+The report above shows that our predefined level of 5\% significance is not kept, i.e. that the largest expected loss cannot be quantified at the 5\% significance level. Instead, the VaR is estimated to be 14%, which means that the probability of the return the next day being lower than the VaR is $\approx 14$% instead of 5%. In practice, this means that the company should set aside more funds than expected, in order to cover the predefined significance level of 5\%. 
 
 LITT USIKKER PÅ DENNE TOLKNINGEN!
 
-Next, we calculate the VaR using an EWMA model with $\lambda = 0.75$. 
+Next, we calculate the VaR using estimates of volatility from the EWMA model with $\lambda = 0.75$ and from the ARMA(2,2)-EGARCH model. 
 
 ```{r ewma/VaR, cache = T}
-# With EWMA calculated with lambda=0.75
 var5.ewma  <-  - qnorm(0.95) * sqrt(vol.ewma0.75)
-var5.egarch <- - qnorm(0.95) * (v)
+var5.egarch <- - qnorm(0.95) * v
 var1.ewma  <-  - qnorm(0.99) * sqrt(vol.ewma0.75)
 var1.egarch <-  - qnorm(0.99) * v
+```
 
-
+```{r, echo = F}
 par(mfrow=c(2,2), cex=0.6, mar=c(2,2,3,1))
 plot(Fechas, rendixic,type="l", main ="5% VaR EWMA")
 lines(Fechas, var5.ewma, col = "blue")
@@ -699,56 +703,30 @@ plot(Fechas, rendixic, type="l", main ="1% VaR E-GARCH(1,1)")
 lines(Fechas, var1.egarch, col ="red")
 ```
 
-HVA ER DETTE?
+The plots above show the estimated VaR's with the two different models, at two different significance levels (5\% shown in blue and 1\% shown in red), plotted together with the returns. To the naked eye it looks like the returns don't sink below the 1\% VaR very often, while they sink below the 5\% VaR somewhat more often, but still rarely. To quantify this, we calculate the fraction of the sample where the loss in returns exceeds each of the significance levels for the two models. USIKKER PÅ DENNE TOLKNINGEN OGSÅ!!?
 
-```{r, eval = F}
-# Copied from aplication_VaR_2022.R
-# VET IKKE HELT HVA DETTE ER, SKJØNNER DET IKKE HELT ENDA. 
-#calculate the fraction of sample where loss exceed both 1% and 5% VaR for EWMA and GjR-GARCH(1,1)
-sum(rendibex < var5.ewma)/length(rendibex) # fraction of sample where loss exceeds 5% VaR for EWMA
-
-sum(rendibex < var5.gjrgarch)/length(rendibex) # fraction of sample where loss exceeds 5% VaR for gjrGARCH(1,1)
-
-sum(rendibex < var1.ewma)/length(rendibex) # fraction of sample where loss exceeds 1% VaR for EWMA
-
-sum(rendibex < var1.gjrgarch)/length(rendibex) # fraction of sample where loss exceeds 1% VaR for gjrGARCH(1,1)
-# vemos que es parecido o igual en ambos casos (con lambda=0.95)
-
-#con EWMA calculada CON LAMBDA=0.75
-vol.ewma0.75 <- EWMA(rendibex^2, lambda = 0.25) # note: in EWMA lambda is actually 1-lambda
-
-var5.ewma  <-  - qnorm(0.95) * sqrt(vol.ewma0.75)
-var5.gjrgarch <-  - qnorm(0.95) * (v)
-var1.ewma  <-  - qnorm(0.99) * sqrt(vol.ewma0.75)
-var1.gjrgarch <-  - qnorm(0.99) * v
-
-par(mfrow=c(2,2), cex=0.6, mar=c(2,2,3,1))
-plot(Fechas, rendibex,type="l", main ="5% VaR EWMA")
-lines(Fechas, var5.ewma, col = "blue")
-plot(Fechas, rendibex,type="l", main ="5% VaR GJR-GARCH(1,1)")
-lines(Fechas, var5.gjrgarch, col ="blue")
-plot(Fechas, rendibex,type="l", main ="1% VaR EWMA")
-lines(Fechas, var1.ewma, col = "red")
-plot(Fechas, rendibex, type="l", main ="1% VaR GJR-GARCH(1,1)")
-lines(Fechas, var1.gjrgarch, col ="red")
-
-#es m?s suave el VaR calculado con GJR-Garch 
-
-#calculate the fraction of sample where loss exceed both 1% and 5% VaR for EWMA and GJRGARCH(1,1)
-sum(rendibex < var5.ewma)/length(rendibex) # fraction of sample where loss exceeds 5% VaR for EWMA
-
-sum(rendibex < var5.gjrgarch)/length(rendibex) # fraction of sample where loss exceeds 5% VaR for gjrGARCH(1,1)
-
-sum(rendibex < var1.ewma)/length(rendibex) # fraction of sample where loss exceeds 1% VaR for EWMA
-
-sum(rendibex < var1.gjrgarch)/length(rendibex) # fraction of sample where loss exceeds 1% VaR for gjrGARCH(1,1)
-
-#?COMO ELEGIMOS LAMBDA? CON GARCH LOS DATOS HABLAN
-#Ewma con lambda 0.75 sobreestima el riesgo y la compa?ia estar?a dedicando demasiados recursos al capital regulatorio m?nimo.
+```{r, echo = F}
+cat("Fraction of sample where loss exceeds 5% VaR for EWMA: ", sum(rendixic < var5.ewma)/length(rendixic)) 
+cat("Fraction of sample where loss exceeds 5% VaR for EGARCH: ",sum(rendixic < var5.egarch)/length(rendixic)) 
+cat("Fraction of sample where loss exceeds 1% VaR for EWMA: ",sum(rendixic < var1.ewma)/length(rendixic))
+cat("Fraction of sample where loss exceeds 1% VaR for EGARCH: ",sum(rendixic < var1.egarch)/length(rendixic)) 
 ```
 
+In a case where we choose a significance level of $\alpha = 0.01$ we can see that the EWMA model with $\lambda = 0.75$ overestimates the risk since STEMMER DETTE HER! SJEKK MED EKSEMPELET HUN BRUKTE MED RENDIBEX!
 
-HVORFOR IKKE FORECASTS SOM BLIR BRUKT HER?
+This is a good example of how a GARCH model is advantegeous compared to an EWMA model, since we use the data to estimate the model ("the data talks") and we need not to set a hyperparameter like $\lambda$ which the results depend largely on. 
+
+Redoing the calculations with the EWMA model with $\lambda = 0.95$ instead gives the fractions
+
+```{r, echo = F}
+var5.ewma  <-  - qnorm(0.95) * sqrt(vol.ewma0.95)
+var1.ewma  <-  - qnorm(0.99) * sqrt(vol.ewma0.95)
+```
+
+```{r}
+cat("Fraction of sample where loss exceeds 5% VaR for EWMA: ", sum(rendixic < var5.ewma)/length(rendixic)) 
+cat("Fraction of sample where loss exceeds 1% VaR for EWMA: ",sum(rendixic < var1.ewma)/length(rendixic))
+```
 
 # Multivariate Analysis
 
@@ -1022,3 +1000,4 @@ STEMMER DET AT DET ER KORRELASJONEN SOM ENDRES I NEWS IMPACT CURVE OVER, OG IKKE
 * Value of gamma in EGARCH: Opposite of how we defined it? Se kommentarer i selve oppgaven (side 19/20).
 * News impact curve for EGARCH: Veldig merkelig kurve, noe galt? Eller er dette noe som kan skje?
 * When does the predicted volatility go towards the unconditional variance?
+* Har noe trøbbel med tolkning av VaR (lese gjennom stoff først kanskje!). Noe jeg burde spørre om ift det?
