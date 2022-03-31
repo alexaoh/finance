@@ -142,7 +142,8 @@ plot(ixic.df)
 
 The autocorrelation function of the residuals has no significant coefficients, which leads us to conclude that the amount of lags chosen via BIC is satisfactory. 
 
-Next, we check if the returns are stationary. Below we calculate the (logarithmic) returns. Note that the first difference is removed, since it is not a numerical value. 
+Next, we check if the returns are stationary. Below we calculate the (logarithmic) returns AS SAID IN THE LECTURE SLIDES (IF THIS IS CORRECT) "From now on, whenever we talk about returns we shall refer to continuously
+compounded returns, unless stated otherwise." I THINK THIS IS NICE TO INCLUDE, IF IT IS CORRECT (AFTER ASKING PROFE ABOUT IT). Note that the first difference is removed, since it is not a numerical value. 
 
 ```{r}
 rendixic <- diff(log(ixic))
@@ -679,10 +680,9 @@ report(var.t, VaR.alpha = 0.05)
 ```
 
 The report above shows that our predefined level of 5\% significance is not kept, i.e. that the largest expected loss cannot be quantified at the 5\% significance level. Instead, the VaR is estimated to be 14%, which means that the probability of the return the next day being lower than the VaR is $\approx 14$% instead of 5%. In practice, this means that the company should set aside more funds than expected, in order to cover the predefined significance level of 5\%. 
-
 LITT USIKKER PÅ DENNE TOLKNINGEN!
 
-Next, we calculate the VaR using estimates of volatility from the EWMA model with $\lambda = 0.75$ and from the ARMA(2,2)-EGARCH model. 
+Next, we calculate the VaR using estimates of volatility from the EWMA model with $\lambda = 0.75$ and from the ARMA(2,2)-EGARCH model. Thus, this is an in-sample comparison of the two models when calculating volatility and VaR. 
 
 ```{r ewma/VaR, cache = T}
 var5.ewma  <-  - qnorm(0.95) * sqrt(vol.ewma0.75)
@@ -712,9 +712,10 @@ cat("Fraction of sample where loss exceeds 1% VaR for EWMA: ",sum(rendixic < var
 cat("Fraction of sample where loss exceeds 1% VaR for EGARCH: ",sum(rendixic < var1.egarch)/length(rendixic)) 
 ```
 
-In a case where we choose a significance level of $\alpha = 0.01$ we can see that the EWMA model with $\lambda = 0.75$ overestimates the risk since STEMMER DETTE HER! SJEKK MED EKSEMPELET HUN BRUKTE MED RENDIBEX!
+In a case where we choose a significance level of $\alpha = 0.01$ we can see that the EWMA model with $\lambda = 0.75$ overestimates the risk, since the fraction of the sample where the loss exceeds the 1\% VaR is 0. It also overestimates the risk slightly when chosing a significance level of $\alpha = 0.05$, since the fraction of the sample where the loss exceeds the 5\% VaR is around 3\%. In practice this means that the company in question is dedicating too much resources to the regulatory capital (minimum capital requirement).
+WHY DOES THE EGARCH FRACTION EXCEED 1\% THOUGH?
 
-This is a good example of how a GARCH model is advantegeous compared to an EWMA model, since we use the data to estimate the model ("the data talks") and we need not to set a hyperparameter like $\lambda$ which the results depend largely on. 
+This is a good example of how a GARCH model is advantageous compared to an EWMA model, since we use the data to estimate the model ("the data talks") and we need not to set a hyperparameter like $\lambda$ which the results depend largely on. 
 
 Redoing the calculations with the EWMA model with $\lambda = 0.95$ instead gives the fractions
 
@@ -723,10 +724,12 @@ var5.ewma  <-  - qnorm(0.95) * sqrt(vol.ewma0.95)
 var1.ewma  <-  - qnorm(0.99) * sqrt(vol.ewma0.95)
 ```
 
-```{r}
+```{r, echo = F}
 cat("Fraction of sample where loss exceeds 5% VaR for EWMA: ", sum(rendixic < var5.ewma)/length(rendixic)) 
 cat("Fraction of sample where loss exceeds 1% VaR for EWMA: ",sum(rendixic < var1.ewma)/length(rendixic))
 ```
+
+These results are very similar to the results obtained when using the EGARCH, but we still have to choose the hyperparameter $\lambda$, which is not a trivial task. 
 
 # Multivariate Analysis
 
@@ -735,14 +738,13 @@ cat("Fraction of sample where loss exceeds 1% VaR for EWMA: ",sum(rendixic < var
 In order to solve this problem I have chosen the stock of Stratus Properties Inc. (STRS), which is one of the [top 30 components](https://finance.yahoo.com/quote/%5EIXIC/components?p=%5EIXIC) of the NASDAQ Composite Index. Similarly to the IXIC-data, this data has been downloaded in a csv-file directly from the Yahoo Finance website. The adjusted close of the time series is plotted below. 
 
 ```{r}
-# Get STRS stock data and redo analysis for this stock. 
 STRS <- read.csv("STRS.csv")
-head(STRS)
+dim(STRS)
 any(is.na(STRS))
-str(STRS)
 strs <- STRS[,6]
-head(strs)
+```
 
+```{r, echo = F}
 tibble("date" = as.Date(STRS[,1]), strs) %>% ggplot(aes(x = date, y = strs)) +
     geom_line() +
     theme_minimal() +
@@ -750,10 +752,9 @@ tibble("date" = as.Date(STRS[,1]), strs) %>% ggplot(aes(x = date, y = strs)) +
     ggtitle("Stratus Properties Inc. (STRS)")
 ```
 
-
 The returns of STRS are calculated and plotted below. 
 
-```{r}
+```{r, echo = F}
 rendstrs <- diff(log(strs))
 tibble("date" = as.Date(STRS[-c(1),1]), rendstrs) %>% ggplot(aes(x = date, y = rendstrs)) +
     geom_line() +
@@ -846,7 +847,7 @@ model8 <- arima(rendstrs, order = c(0,0,3),include.mean = TRUE)
 model8
 pnorm(c(abs(model8$coef)/sqrt(diag(model8$var.coef))), mean=0, sd=1, lower.tail=FALSE)
 
-#arma(2,3)
+#arma(3,3)
 model9 <- arima(rendstrs, order = c(3,0,3),include.mean = TRUE)
 model9
 pnorm(c(abs(model9$coef)/sqrt(diag(model9$var.coef))), mean=0, sd=1, lower.tail=FALSE)
@@ -864,7 +865,7 @@ knitr::kable(df.arma, caption = "AIC and BIC of different estimated models for t
 # Looks like ARMA(3,3) is the best, because of the lowest AIC (ARMA(4,4) produces NaNs, so cannot keep testing models with more params).
 # However, ar3 is not significant!!
 
-# Choose the MA(1) for lowest BIC and second lowest AIC (and significant coefficients).
+# Choose the MA(1) for lowest BIC and fifth lowest AIC (and significant coefficient).
 
 mean.model <- arima(rendstrs, order = c(0,0,1),include.mean = TRUE)
 mean.model
@@ -907,6 +908,7 @@ mgjr.aic <- -4.7723 # Smaller AIC!
 par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
 plot(mgjr, which = 10)
 plot(mgjr, which = 11)
+plot(mgjr, which = 12)
 
 spec.egarch <- ugarchspec(variance.model = list(model="eGARCH", garchOrder = c(1,1)), mean.model = list(armaOrder=c(0,1)), distribution.model = "std")
 (m.egarch <- ugarchfit(spec = spec.egarch, data = rendstrs)) # Do we expect stationarity and positivity?
@@ -925,14 +927,14 @@ plot(m.igarch, which = 10)
 plot(m.igarch, which = 11)
 ```
 
-After doing a similar analysis of this series, I have come to the conclusion that an MA(1)-EGARCH is the best model to estimate its volatility. This model is used, together with the ARMA(2,2)-EGARCH from IXIC, to estimate the multivariate DCC GARCH model for these two series (both of which are estimated on the logarithmic returns, not on the series themselves). 
+After doing a similar analysis of this series, the conclusion is that a MA(1)-EGARCH is the best model to estimate its volatility. This model is used, together with the ARMA(2,2)-EGARCH from IXIC, to estimate the multivariate DCC GARCH model for these two series (both of which are estimated on the logarithmic returns, not on the series themselves). 
 
 ```{r}
 returns <- cbind(rendixic,rendstrs) 
-
-# dcc specification - GARCH(1,1) for conditional correlations con diferentes garch para cada serie, en alg?n caso no es modelo asim?trico
-spec1 <- ugarchspec(mean.model = list(armaOrder = c(2,2)), variance.model = list(garchOrder = c(1,1), model = "eGARCH"), distribution.model = "std") 
-spec2 <- ugarchspec(mean.model = list(armaOrder = c(0,1)), variance.model = list(garchOrder = c(1,1), model = "eGARCH"), distribution.model = "std") 
+spec1 <- ugarchspec(mean.model = list(armaOrder = c(2,2)), variance.model = list(garchOrder = c(1,1), 
+                                                  model = "eGARCH"), distribution.model = "std") 
+spec2 <- ugarchspec(mean.model = list(armaOrder = c(0,1)), variance.model = list(garchOrder = c(1,1), 
+                                                  model = "eGARCH"), distribution.model = "std") 
 dcc.garch11.spec <- dccspec(uspec = multispec(c(spec1, spec2)), dccOrder = c(1,1), distribution = "mvnorm")
 (dcc.fit <- dccfit(dcc.garch11.spec, data = returns))
 ```
@@ -943,23 +945,23 @@ WHAT ASSUMPTIONS NEED TO BE FULFILLED FOR THIS MODEL!?
 
 The plot below shows the conditional standard error estimated from the model (in blue) and the realized absolute returns (in grey). 
 
-```{r}
+```{r, echo = F, fig.height = 7}
 plot(dcc.fit, which = 2)
 ```
 
-From this plot we can gather that the model has made good estimations of the standard error, because the behaviour of the graphs are similar. Note that we cannot conclude anything based on the absolute values of the quantities; we are only interested in the shape or the behaviour of the quantities. 
+From this plot we can gather that the model has made good estimations of the standard error, because the behaviour of the graphs are similar. Note that we cannot conclude anything based on the absolute values of the quantities; we are only interested in the shape or the behaviour of the quantities.  THE AXES ARE FUCKED UP HERE AS WELL!
 
-The plot below shows the conditional correlation estimated from the model. 
+The plot below shows the correlation between the two series estimated from the model. 
 
-```{r}
+```{r, echo = F}
 cor1 <- rcor(dcc.fit) 
 par(mfrow=c(1,1),font=2,font.lab=4,font.axis=2,las=1)
-plot(as.Date(STRS[-1,1]),cor1[1,2,], type='l', main="Correlacion between IXIC and STRS")
+plot(as.Date(STRS[-1,1]),cor1[1,2,], type='l', main="Correlation between IXIC and STRS")
 ```
 
-The correlation is plotted alongside the two original time series below. 
+The correlation is plotted alongside the two original time series.
 
-```{r}
+```{r, echo = F}
 tibble("date" = as.Date(Ixic[-1,1]),"IXIC" = ixic[-1], "STRS" = strs[-1], "cor" = cor1[1,2,]) %>% 
 gather(key = distribution, value = value, -date)%>% 
 ggplot(aes(x = date, y = value)) +
@@ -969,7 +971,7 @@ ggplot(aes(x = date, y = value)) +
   facet_wrap(~distribution, nrow = 3, scales = "free")
 ```
 
-Just by looking at the two time series side by side, they look to move in a similar fashion. The peak in the correlation between the two series, which corresponds to a correlation of about 0.45, took place in the beginnin of 2020, when both prices fell, most likely because of the COVID-pandemic. 
+Just by looking at the two time series side by side, they look like they move in a similar fashion. However, STRS exhibits more volatile behaviour, i.e. it does not increase as stably as IXIC, likely because we are comparing one individual stock to an index. The peak in the correlation between the two series, which corresponds to a correlation of about 0.45, took place in the beginning of 2020, when both prices fell, most likely because of the outburst of COVID-19. One of the stylized facts about financial time series (daily returns) becomes apparent here; the correlation between assets increases during highly-volatile periods, particularly during crashes. 
 
 OTHER THAN THAT, I AM NOT QUITE CERTAIN THAT I AM ABLE TO INTERPRET ANYTHING ELSE FROM THE PLOTS. 
 
@@ -992,7 +994,7 @@ STEMMER DET AT DET ER KORRELASJONEN SOM ENDRES I NEWS IMPACT CURVE OVER, OG IKKE
 # QUESTIONS FOR PROFE: 
 
 * Generelt: Er hun interessert i å se kode i rapporten, eller bare resulater med diskusjon? Hvor mye av output fra tester etc kan sløyfes?
-* Correct to talk about returns, when they are calculated as diff(log(IXIC))?
+* Correct to talk about returns, when they are calculated as diff(log(IXIC))? Or should these be called "continuously compounded returns"?
 * Spør om ekstra plot under 3.5!? Har (rendixic - mean(rendixic))^2 noe sammenheng med ACF av residuals^2? Estimador insesgado?
 * In GARCH models: WHY CHOOSE A T-STUDENT OVER A NORMAL (OR VICE VERSA)?
 * Is positivity needed for GJR-GARCH as well? Because this is used to reject the possiblity of using GJR-GARCH as a model for the variance!
@@ -1001,3 +1003,6 @@ STEMMER DET AT DET ER KORRELASJONEN SOM ENDRES I NEWS IMPACT CURVE OVER, OG IKKE
 * News impact curve for EGARCH: Veldig merkelig kurve, noe galt? Eller er dette noe som kan skje?
 * When does the predicted volatility go towards the unconditional variance?
 * Har noe trøbbel med tolkning av VaR (lese gjennom stoff først kanskje!). Noe jeg burde spørre om ift det?
+* Why does the EGARCH VaR exceed the 1\% level when using 0.01 as a significance level?
+* What assumptions need to be fulfilled in the DCC Multivariate GARCH?
+* Interpretations in the multivariate case: From the correlation and from the news impact surface?
