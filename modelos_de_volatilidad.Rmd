@@ -44,9 +44,7 @@ knitr::knit_hooks$set(chunk = function(x, options) {
 ```
 
 # Abstract
-The NASDAQ Composite Index (IXIC) is studied using data from 01.01.2012 to 01.03.2022. The mean and conditional variance of the series are modelized. The work shows that (SUMMARY 100 words).
-
-MAKE REFERENCES BETWEEN PLOTS (NUMBERS AND CITATIONS IN TEXT, bookdown is necessary maybe?) LATER. 
+The NASDAQ Composite Index (IXIC) is studied using data from 01.01.2012 to 01.03.2022. The mean and variance of the series are modeled. The work shows that the volatility of the returns of the index, which is a stationary process, can be modeled by a ARMA(2,2)-EGARCH model. Moreover, it shows that the GARCH-based models are more reliable for volatility modeling than the use of historical volatility or EWMA, without the need of setting any hyperparameters. Lastly, it shows that a multivariate DCC GARCH model can be used to model the correlation between two stationary series, in this case the correlation between the returns of IXIC and the returns of the Stratus Properties Inc. stock, which is one of the components of the index. 
 
 \newpage
 # Introduction 
@@ -60,9 +58,9 @@ The NASDAQ Composite Index (IXIC) is analyzed from 01.01.2012 to 01.03.2022 (255
 
 As noted, the data is downloaded from [Yahoo Finance](https://finance.yahoo.com/). This is a free portal that aggregates financial information like market news, stock prices, personal finance information, portfolio management resources and much more. 
 
-The mean and conditional variance of the financial time series are modelized, in order to study its volatility. The volatility models can be used to learn several things about the index. First of all, they can be used to predict and interpret future volatility. Additionally, they can be used to interpret the impact of news on the index. Moreover, they can be used to calculate the Value at Risk (VaR). All of these applications are shown in this work. Finally, a multivariate analysis is done, explicitly including the stock of Stratus Properties Inc. (STRS), in order to study some multivariate properties between the two financial time series. Note that STRS is one of the top [30 components](https://finance.yahoo.com/quote/%5EIXIC/components?p=%5EIXIC) of IXIC. 
+The mean and conditional variance of the financial time series are modelized, in order to study its volatility. The volatility models can be used to learn several things about the index. First of all, they can be used to predict and interpret future volatility. Additionally, they can be used to interpret the impact of news on the index. Moreover, they can be used to calculate the Value at Risk (VaR). All of these applications are shown in this work. Finally, a multivariate analysis is done, explicitly including the stock of Stratus Properties Inc. (STRS), in order to study some multivariate properties between the two financial time series. Note that STRS is one of the top [30 components](https://finance.yahoo.com/quote/%5EIXIC/components?p=%5EIXIC) of IXIC. DESCRIBE THE STRATUS PROPERTIES INC COMPANY/STOCK AS WELL!!
 
-The table of contents is shown below. The rest of the report is split into a univariate part and a multivariate part, where the univariate part is the largest and most detailed. Part 3.1 loads and describes the data in a concise fashion, detailing some events that may be related to the changes in the daily adjusted closing price. Section 3.2 analyzes the stationarity of the series, which leads to the conclusion that IXIC is in fact non-stationary. The returns of the series are stationary however, which means that they are used in the remainder of the work instead. Section 3.3 presents some basic statistical properties of the returns. Section 3.4 and 3.5 build models for the mean and variance, respectively, of the stationary series. Section 3.6 presents a grafic and interpretation of the volatility series estimated by the model found in previous sections, while section 3.7 shows the news impact curve of the modelized series. Part 3.8 does volatility predictions and interpretations, based on the models estimated previously. Section 3.9 calculates volatility with two other methods which have not been used earlier in the work; historical volatility and Exponentially Weighted Moving Average (EWMA). Finally in section 3, part 3.10 calculates and interprets the Value at Risk (VaR). The second main part of the report treats a multivariate analysis of IXIC, coupled with STRS. In section 4.1 a multivariate DCC GARCH model is fitted to the residuals of the time series. In this case, the identification, estimation and diagnostics for the models of for the mean and variance of the residuals of STRS is not shown. Section 4.2 estimates the correlation between the two financial series and shows the news impact surface, which is the bivariate equivalent to the news impact curve. Finally, a conclusion of the work is formulated. 
+The table of contents is shown below. The rest of the report is split into a univariate part and a multivariate part, where the univariate part is the largest and most detailed. Part 3.1 loads and describes the data in a concise fashion, detailing some events that may be related to the changes in the daily adjusted closing price. Section 3.2 analyzes the stationarity of the series, which leads to the conclusion that IXIC is in fact non-stationary. The returns of the series are stationary however, which means that they are used in the remainder of the work instead. Section 3.3 presents some basic statistical properties of the returns. Section 3.4 and 3.5 build models for the mean and variance, respectively, of the stationary series. Section 3.6 presents a grafic and interpretation of the volatility series estimated by the model found in previous sections, while section 3.7 shows the news impact curve of the modelized series. Part 3.8 does volatility predictions and interpretations, based on the models estimated previously. Section 3.9 calculates volatility with two other methods which have not been used earlier in the work; historical volatility and Exponentially Weighted Moving Average (EWMA). Finally in section 3, part 3.10 calculates and interprets the Value at Risk (VaR). The second main part of the report treats a multivariate analysis of IXIC, coupled with STRS. In section 4.1 a multivariate DCC GARCH model is fitted to the residuals of the time series. In this case, the identification, estimation and diagnostics of the models for the mean and variance of the returns of STRS is not shown. Section 4.2 estimates the correlation between the two financial series and shows the news impact surface, which is the bivariate equivalent to the news impact curve. Finally, a conclusion of the work is formulated. 
 
 \newpage
 \tableofcontents
@@ -80,7 +78,7 @@ options("getSymbols.warning4.0"=FALSE)
 
 ```{r}
 #getSymbols("^IXIC",from="2012-01-01", to="2022-03-01", warnings = F) 
-Ixic <- read.csv("IXIC.csv", )
+Ixic <- read.csv("IXIC.csv")
 dim(Ixic) 
 any(is.na(Ixic))
 #dim(IXIC)
@@ -125,9 +123,9 @@ Box.test(ixic, lag = 15, type = c("Ljung-Box"))
 Box.test(ixic, lag = 20, type = c("Ljung-Box"))
 ```
 
-The low $p$-values mean that, to any reasonably chosen significance level (often at 5\%), the null hypothesis that all $m$ correlation coefficients are simultaneously equal to zero is rejected. This further suggests that the series is non-stationary. 
+The low $p$-values mean that, to any reasonably prespecified significance level (often at 5\%), the null hypothesis that all $m$ correlation coefficients are simultaneously equal to zero is rejected. This further suggests that the series is non-stationary. 
 
-Next, some formal tests are done to check stationarity of the series. First, the Augmented-Dickey-Fuller (ADF) unit root test is done. The null hypothesis for this test states that the series is integrated of order 1, i.e. that it is non-stationary. Below, the ADF test is done assuming both a stochastic and deterministic trend in the data. The maximum number of lags considered are 20 and the number of lags used are chosen by BIC. 
+Next, some formal tests are done to check stationarity of the series. First, the Augmented-Dickey-Fuller (ADF) unit root test is done. The null hypothesis of this test states that the series is integrated of order 1, i.e. that it is non-stationary. Below, the ADF test is done assuming both a stochastic and deterministic trend in the data. The maximum number of lags considered are 20 and the number of lags used are chosen by BIC. 
 
 ```{r}
 ixic.df<-ur.df(ixic, type = c("trend"), lags=20, selectlags = c("BIC"))
@@ -136,14 +134,13 @@ summary(ixic.df)
 
 From the output it is apparent that BIC chooses 9 lags in the ADF test. Moreover, the value of the test-statistic clearly suggests that we cannot reject the null-hypothesis, since the value is much larger than the critical values for this left-sided test. Thus, we would conclude that the series is non-stationary. Note that the test leads to the same conclusion when assuming no trends and when assuming only a drift. Moreover, the same amount of lags were chosen automatically for all three variants. Below, the residuals and the autocorrelation functions of the residuals are plotted, in order to check if the number of lags chosen via BIC is satisfactory. 
 
-```{r, echo = F}
+```{r, echo = F, fig.height = 6}
 plot(ixic.df)
 ```
 
 The autocorrelation function of the residuals has no significant coefficients, which leads us to conclude that the amount of lags chosen via BIC is satisfactory. 
 
-Next, we check if the returns are stationary. Below we calculate the (logarithmic) returns AS SAID IN THE LECTURE SLIDES (IF THIS IS CORRECT) "From now on, whenever we talk about returns we shall refer to continuously
-compounded returns, unless stated otherwise." I THINK THIS IS NICE TO INCLUDE, IF IT IS CORRECT (AFTER ASKING PROFE ABOUT IT). Note that the first difference is removed, since it is not a numerical value. 
+Next, we check if the returns are stationary. To be clear, the word "returns" is used to refer to the continuously compounded returns. Thus, whenever we talk about returns, we are referring to the continuously compounded returns of the series. 
 
 ```{r}
 rendixic <- diff(log(ixic))
@@ -170,7 +167,7 @@ It is apparent that 8 lags are chosen. Moreover, from the test-statistic above w
 
 As earlier, the plot below shows that the amount of lags for the ADF test chosen via BIC is satisfactory. 
 
-```{r, echo = F}
+```{r, echo = F, fig.height = 6}
 plot(rendixic.df)
 ```
 
@@ -188,7 +185,7 @@ rendixic.pp<-ur.pp(rendixic, type = c("Z-tau"), model = c("constant"), lags = c(
 
 When referring to the returns, the conclusion is the same as for the ADF test; the returns are stationary while the original series is not. 
 
-Finally, we use the KPSS test to check stationarity of the series. The null hypothesis for this test states that the series is stationary. In the test below we have chosen to assume the deterministic component as a constant with a linear trend, and we have used short lags. Notice that the conclusion is the same with all different variations of assumptions for the test. 
+Finally, we use the KPSS test to check stationarity of the series. The null hypothesis of this test states that the series is stationary. In the test below we have chosen to assume the deterministic component as a constant with a linear trend, and we have used short lags. Notice that the conclusion is the same with all different variations of assumptions for the test. 
 
 ```{r}
 ixic.kpss<-ur.kpss(ixic, type = c("tau"), lags = c("short"))
@@ -295,7 +292,7 @@ The table above clearly shows that ARMA(2,2) yields the lowest AIC and BIC. The 
 ```{r}
 (mean.model <- arima(rendixic, order = c(2,0,2),include.mean = TRUE))
 pnorm(c(abs(mean.model$coef)/sqrt(diag(mean.model$var.coef))), mean=0, sd=1, lower.tail=FALSE)
-residuals <- mean.model$residuals
+residuals <- c(mean.model$residuals)
 ```
 
 Some model diagnostics have to be done to check if the model is adequate. We must check if the model is stationary. The inverse roots of the characteristic polynomial of AR and MA are plotted.
@@ -304,11 +301,11 @@ Some model diagnostics have to be done to check if the model is adequate. We mus
 plot(mean.model)
 ```
 
-DO WE WANT ALL OF THE INVERSE ROOTS TO FALL INSIDE, FOR BOTH THE AR AND THE MA PROCESS? The stationarity condition for the AR-process is satisfied, since the roots have absolute values greater than one. Moreover, the invertibility condition holds for the MA process, since the roots of this process also have absolute values greater than one. Thus, the model is stationary. 
+The stationarity condition for the AR-process is satisfied, since the roots have absolute values greater than one. Moreover, the invertibility condition holds for the MA process, since the roots of this process also have absolute values greater than one. Thus, the full model is stationary. 
 
 The residuals of the model are analyzed next. 
 
-```{r, echo = F}
+```{r, echo = F, fig.height=7}
 tsdiag(mean.model)
 ```
 
@@ -322,11 +319,16 @@ qqnorm(residuals)
 qqline(residuals, datax = FALSE)
 ```
 
-Also, the residuals of the estimated model are plotted. 
+Also, the residuals of the estimated model are plotted, with the returns of IXIC superposed in light red. Notice that, qualitatively, they look similar, which indicates that the model for the mean does not have a whole lot of explicative power on the returns. 
 
-```{r, echo = F}
-plot(residuals)
-title (main="Residuals")
+```{r, echo = F, warning=FALSE}
+tibble("date" = as.Date(Ixic[-c(1),1]), residuals, rendixic) %>% 
+  ggplot(aes(x = date, y = residuals)) +
+    geom_line() +
+    geom_line(aes(x = date, y = rendixic), col = "red", alpha = 0.3) +
+    theme_minimal() +
+    scale_x_date(date_labels = "%Y %b %d", date_breaks = "1 year") +
+    ggtitle("Residuals of the Mean Model")
 ```
 
 The Jarque-Bera Normality test is also applied. 
@@ -342,37 +344,29 @@ It is apparent that the residuals have heavy tails. It is not reasonable to assu
 First we test for ARCH effects using the residuals of the mean model. 
 
 ```{r}
-residuals2 <- residuals^2
+residuals.squared <- residuals^2
 ```
 
 ```{r, echo = F}
 par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
-acf(residuals2,ylim=c(-1,1),main="Squared Residuals") 
-pacf(residuals2,ylim=c(-1,1),main="Squared Residuals")
-```
-
-```{r, eval = T}
-par(mfrow=c(1,1))
-# Har acf ovenfor noe sammenheng med plottet nedenfor (se slides 33++ i Volatility Models)?
-# For de ser veldig like ut. Men vet ikke helt om residuals^2 fra modellen har noe med dette å gjøre?
-# Mulig det er fordi vi estimerer mean vha ARMA-modellen og trekker den fra + kvadrat, noe vi egt gjør direkte fra serien nedenfor!?
-acf((rendixic-mean(rendixic))^2, ylim = c(-1,1))
+acf(residuals.squared,ylim=c(-1,1),main="Squared Residuals") 
+pacf(residuals.squared,ylim=c(-1,1),main="Squared Residuals")
 ```
 
 As seen in the ACF and PACF of the squared residuals, they are clearly presenting autocorrelation, i.e. there are ARCH effects present. 
 
 ```{r}
-Box.test(residuals2,lag=1,type='Ljung')
+Box.test(residuals.squared, lag=1,type='Ljung')
 ```
 
 ```{r, eval = F}
-Box.test(residuals2,lag=5,type='Ljung')
-Box.test(residuals2,lag=15,type='Ljung')
+Box.test(residuals.squared,lag=5,type='Ljung')
+Box.test(residuals.squared,lag=15,type='Ljung')
 ```
 
 The argument is further substantiated by the Ljung-Box tests, where only the first result is shown, since they all lead to the conclusion that the squared residuals are correlated, because the null hypothesis is rejected. Thus, it is relevant to identify and estimate a model for the volatility. Joint estimation of the mean and volatility equations, for different types of models, is done in the following. 
 
-Now over to estimation of GARCH models for the variance of the returns. First we estimate a ARMA(2,2)-GARCH(1,1) with a t-student distribution. WHY CHOOSE A T-STUDENT OVER A NORMAL (OR VICE VERSA)?
+Now over to estimation of GARCH models for the variance of the returns. First we estimate a ARMA(2,2)-GARCH(1,1), assuming the error term is conditionally t-student distributed. We will make this same assumption in all the following estimations. 
 
 ```{r}
 spec1 <- ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(1,1)), 
@@ -381,13 +375,15 @@ spec1 <- ugarchspec(variance.model = list(model = "sGARCH", garchOrder = c(1,1))
 m.AIC <- -6.4605
 ```
 
-We observe that all the parameter estimates are significant to a 5\% significance level. Moreover, we note that the condition of positivity holds, because $\hat{\alpha}_1 > 0$ and $\hat{\beta}_1 > 0$, where we follow the standard statistical notation of a hat indicating an estimate. Also, we note that the condition of stationarity holds, because $\hat{\alpha}_1 + \hat{\beta}_1 < 1$. We record the AIC of this first model in order to compare to other models later. The ACF of the residuals, plotted below, shows that the residuals do not present any autocorrelation (before moving to around 15 lags, which is a large number of lags), which indicates that this model has modeled the data in a sufficient or reasonable way. However, note that the $p$-values of the `Weighted Ljung-Box Test on Standardized Residuals` are quite large, which means we cannot reject the null hypothesis of no serial correlation for the different lags. This can be noted as a disadvantage of the first proposed model. 
+We observe that all the parameter estimates are significant to a 5\% significance level. Moreover, we note that the condition of positivity holds, because $\hat{\alpha}_1 \geq 0$ and $\hat{\beta}_1 \geq 0$, where we follow the standard statistical notation of a hat indicating an estimate. Also, we note that the condition of stationarity holds, because $\hat{\alpha}_1 + \hat{\beta}_1 < 1$. We record the AIC of this first model in order to compare to other models later. The ACF of the residuals, plotted below, shows that the residuals do not present any autocorrelation (before moving to around 15 lags, which is a large number of lags), which indicates that this model has modeled the data in a sufficient or reasonable way. However, note that the $p$-values of the `Weighted Ljung-Box Test on Standardized Residuals` are quite large, which means we cannot reject the null hypothesis of no serial correlation for the different lags. As will become apparent in the following, this is actually the case for all the models we estimate, which means that it cannot be used to differentiate between them. However, it can be noted as a disadvantage of all these models in general. 
 
 ```{r, echo = F}
 par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
 plot(m, which = 10)
 plot(m, which = 11)
 ```
+
+Some quick interpretations of some of the parameters in the standard GARCH-model; as noted in the documentation of `rugarch`, $\alpha_1$ is the ARCH term and $\beta_1$ is the GARCH term in the estimated model. This means that $\alpha_1$ essentially measures the reaction of conditional volatility due to market shocks and that $\beta_1$ essentially measures the persistence of conditional volatility. When $\alpha_1 > 0.1$, which is the case here, it is regarded as large and we say that the volatility is very sensitive to market events. When $\beta_1 > 0.9$, we say that the volatility is very persistent, which is not the case here. 
 
 <!-- The estimated volatilities from this first model, together with the returns, are shown in the plots below. The general behaviour seems to match relatively well, i.e. the movements in the two plots coincide relatively well.  -->
 
@@ -403,17 +399,16 @@ Next we will fit a ARMA(2,2)-GJR-GARCH(1,1) model, assuming a t-distribution.
 spec.mgjr <- ugarchspec(variance.model=list(model="gjrGARCH", garchOrder = c(1,1)),
                     mean.model=list(armaOrder=c(2,2)), distribution.model = "std")
 (mgjr <- ugarchfit(spec = spec.mgjr, data = rendixic))
+mgjr.AIC <- -6.4923
 ```
 
-The stationarity conditions hold, since $\hat{\alpha}_1 + \hat{\beta}_1 + \frac12 \hat{\gamma} \approx$ `r round(0.823974 + 0.5*0.260477, 3)` $<1$. However, the positivity condition does not seem to hold, since $\hat{\alpha} = 0 \ngeq 0$. Thus, the GJR-GARCH based model will not be used, even though the AIC is lower and the residuals do not present any autocorrelation according to plots. Moreover, the several of the ARMA-parameter coefficient estimates are not significant to a reasonable level, which is found to be the case no matter what `armaOrder` is used in the estimation. 
+The stationarity conditions hold, since $\hat{\alpha}_1 + \hat{\beta}_1 + \frac12 \hat{\gamma} \approx$ `r round(0.823974 + 0.5*0.260477, 3)` $<1$. Moreover, the positivity condition also holds, since $\hat{\alpha}_1 \geq 0$ and $\hat{\beta}_1 \geq 0$. Notice that the AIC is lower for this model compared to the standard model and the residuals do not present any autocorrelation according to the plots below. Notice that several of the ARMA-parameter coefficient estimates are not significant to a reasonable level, which is found to be the case no matter what `armaOrder` is used in the estimation. The parameters $\alpha_1$, $\beta_1$ and $\gamma_1$ can be interpreted as; $\alpha_1$ measures the reaction of conditional volatility due to market shocks. The estimate is equal to zero and is not significant in this case, which means that it will not be used to quantify this reaction. $\beta_1$ measures the persistence of conditional volatility, which has an estimate of $\hat{\beta}_1 \approx 0.82$ in this case, which is not regarded as large. $\gamma_1$ measures the extra reaction of the conditional volatility due to negative market shocks. In this case, $\hat{\gamma}_1$ is positive and significant, which means that the volatility increase is more pronounced following a negative return compared to a positive return of the same size. Couple this with the observation that $\hat{\alpha}_1 = 0$, we can interpret that the volatility reactions only take place for negative news, which will become apparent in the news impact curve later on. 
 
-<!-- The residuals for the second model are plotted below.  -->
-
-<!-- ```{r} -->
-<!-- par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1) -->
-<!-- plot(mgjr, which = 10) -->
-<!-- plot(mgjr, which = 11) -->
-<!-- ``` -->
+```{r, echo = F}
+par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
+plot(mgjr, which = 10)
+plot(mgjr, which = 11)
+```
 
 
 <!-- ```{r} -->
@@ -424,7 +419,7 @@ The stationarity conditions hold, since $\hat{\alpha}_1 + \hat{\beta}_1 + \frac1
 <!-- plot(rendixic)  -->
 <!-- ``` -->
 
-Next, we will fit an ARMA(2,2)-EGARCH model. 
+Next, we will fit an ARMA(2,2)-EGARCH(1,1) model. 
  
 ```{r}
 spec.egarch <- ugarchspec(variance.model = list(model="eGARCH", garchOrder = c(1,1)), 
@@ -433,8 +428,7 @@ spec.egarch <- ugarchspec(variance.model = list(model="eGARCH", garchOrder = c(1
 m.egarch.AIC <- -6.4958
 ```
 
-All estimated parameters are significant to a level of $\alpha = 0.05$. For this model, we do not require positivity of the GARCH parameter estimates. WHAT ABOUT STATIONARITY, DO WE REQUIRE THIS? The residual plots below do not show any autocorrelation before moving to a large number of lags, which is a good sign that the model has modelized the data adequately. Moreover, the AIC for this model is the smallest value thus far. Because of this, we would prefer this model. Note that $\gamma > 0$, which should mean that the positive news have a larger effect on the news compared to the negative news, which does not make sense here, when looking at the news impact curve. THIS IS STRANGE, I DO NOT UNDERSTAND THIS!? ASK PROFE!
-DETTE ER MOTSATT DEFINERT I R VIRKER DET SOM! EN POSITIV GAMMA ER DET SAMME SOM EN NEGATIV I LIGNINGENE, I.E. EN POSITIV GAMMA GIR STØRRE EFFEKT FOR DE NEGATIVE NYHETENE ENN DE POSITIVE, SOM VI SER AV PLOTTET!
+All estimated parameters are significant to a level of $\alpha = 0.05$. For this model, we do not require positivity of all the GARCH parameter estimates. WHAT ABOUT STATIONARITY, DO WE REQUIRE THIS? The residual plots below do not show any autocorrelation before moving to a large number of lags, which is a good sign that the model has modelized the data adequately. Moreover, the AIC for this model is the smallest value thus far. Notice that $\hat{\alpha}_1 < 0$, which indicates that the model estimates that negative news have a larger effect on the volatility compared to positive news. The reason behind this statement is that $\alpha_1$ measures the reaction of conditional volatility due to market shocks, where the market shocks are quantified by the returns themselves (instead of some sort of transformation of returns, like squared returns or absolute returns). This implies that when the return is negative, the product of $\alpha_1$ and the return will be positive, increasing the volatility, whereas when the return is negative the corresponding product will be negative, decreasing the volatility. The observation that negative news lead to higher volatility compared to positive news is coherent with the news impact curve produced by the model, which will be plotted later. As earlier, $\beta_1$ quantifies the persistence of conditional volatility. Notice that the parameter $\gamma_1$ has a different meaning in this model compared to in the GJR-GARCH; here it quantifies the reaction of conditional volatility due to the absolute value of the returns, i.e. this parameter does not discriminate between negative and positive news. This differentiation between the two types is done via $\alpha_1$, referring to the previous discussion. 
 
 ```{r, echo = F}
 par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
@@ -452,7 +446,7 @@ spec.igarch <- ugarchspec(variance.model=list(model="iGARCH", garchOrder = c(1,1
 m.igarch.AIC <- -6.4602
 ```
 
-The residuals for the iGARCH look alright, but the AIC is lower for the EGARCH based model. Hence, I will not bother considering the other properties. 
+The residuals for the IGARCH look alright, but the AIC is the largest we have encountered thus far. Hence, I will not bother considering the other properties. 
 
 ```{r, echo = F}
 par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
@@ -460,7 +454,13 @@ plot(m.igarch, which = 10)
 plot(m.igarch, which = 11)
 ```
 
-Thus, I would conclude that the best model out of the four fitted is the EGARCH based model, since it satisfies its conditions and has the lowest AIC. 
+Thus, the conclusion is that the best model out of the four fitted is the EGARCH based model, since it satisfies the necessary conditions and has the lowest AIC, as seen in the table below. 
+
+```{r, echo = F}
+aic.GARCHES <- cbind(m.AIC, mgjr.AIC, m.egarch.AIC, m.igarch.AIC)
+colnames(aic.GARCHES) <- c("sGARCH", "GJR-GARCH", "EGARCH", "IGARCH")
+knitr::kable(aic.GARCHES, caption = "AIC for the Different Estimated GARCH Models¨")
+```
 
 ## Grafic and Interpretation of the Estimated Series of Volatility
 
@@ -501,17 +501,17 @@ legend("topleft", c("returnsabs","v"), lty=c(1,1), col=c("black","red"), cex=0.6
 
 ## Grafic and Interpretation of the News Impact Curve
 
-The news impact curve for our chosen model is shown below. Since the standard GARCH model does not take the leverage effect into effect, the news impact curve is symmetric. 
+The news impact curve for our chosen model is shown below. Moreover, the news impact curve for the GJR-GARCH based model is also shown, since we will use this model later in the analysis again, for reasons that will become apparent. 
 
-```{r}
+```{r, echo = F}
 par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
 nie <- newsimpact(z = NULL, m.egarch)
 plot(nie$zx, nie$zy, ylab=nie$yexpr, xlab=nie$xexpr, type="l", main = "News Impact Curve EGARCH")
-ni <- newsimpact(z = NULL, m)
-plot(ni$zx, ni$zy, ylab=ni$yexpr, xlab=ni$xexpr, type="l", main = "News Impact Curve sGARCH")
+ni <- newsimpact(z = NULL, mgjr)
+plot(ni$zx, ni$zy, ylab=ni$yexpr, xlab=ni$xexpr, type="l", main = "News Impact Curve GJR-GARCH")
 ```
 
-The EGARCH based model considers the leverage effect, which is why the news impact curve is non-symmetric. This curve indicates that the volatility is impacted to a higher degree by negative news compared to the impact on the volatility following positive news, which decreases as the positivity of the news increases THIS IS VERY STRANGE!! ASK PROFE!
+Both models consider the leverage effect, which is why the news impact curve is non-symmetric. The curves indicate that the volatility is impacted to a higher degree by negative news compared to the impact on the volatility following positive news, which decreases as the positivity of the news increases. The reader is referred to the discussion of the parameters in each of the two models for a more detailed discussion concerning this. 
 
 ## Volatility Predictions and Interpretations
 
@@ -532,7 +532,7 @@ plot(forc, which = 3)
 cat("Long Run Unconditional Variance: ",uncvariance(m.egarch.pred)^0.5)
 ```
 
-As we can see from the uppermost plot, these static predictions (for the mean) 10 steps ahead are relatively useless. ALSO LOOKS LIKE THE FORECAST OF THE VARIANCE WILL GO TOWARDS THE UNCONDITIONAL VARIANCE. NOT SURE IN WHAT SITUATIONS THIS SHOULD HAPPEN THOUGH, ASK PROFE PERHAPS!
+As we can see from the uppermost plot, these static predictions (for the mean) 10 steps ahead are relatively useless. 
 
 Next, let us predict 10 steps into the future with a rolling window. We reestimate the model at each time step and estimate one step into the future after each reestimation. After doing this 10 times, we have effectively predicted 10 days into the future. 
 
@@ -603,12 +603,12 @@ plot(Fechas5, vol.hist240, type="l", ylab='variance', xlab="time", main='1 year 
 par(mfrow=c(1,1),font=2,font.lab=4,font.axis=2,las=1)
 ```
 
-As is apparent from the plots, the volatility pattern is highly dependent on the $k$, i.e. the number of observations used to calculate the moving average. Moreover, we can see that the results are greatly affected by extreme values, especially when $k$ is small, which is clearly seen in the results for the 1 month moving average. The volatility pattern is smoother when $k$ is larger. Which of these values for $k$ gives the "best" results? This is difficult to answer. 
+As is apparent from the plots, the volatility pattern is highly dependent on $k$, i.e. the number of observations used to calculate the moving average. Moreover, we can see that the results are greatly affected by extreme values, especially when $k$ is small, which is clearly seen in the results for the 1 month moving average. The volatility pattern is smoother when $k$ is larger. Which of these values for $k$ gives the "best" results? This is difficult to answer. 
 
 Following the calculations from historical volatility, the Exponentially Weighted Moving Average (EWMA) model is used to calculate volatility
 
 $$
-\sigma_t^2 = (1-\lambda)r_{t-1}^2 + \lambda\sigma_{t-1}^2 = (1-\lambda) \sum_{i = 1}^\infty\lambda^{i-1}r_{t-1}^2, \hspace{0.5em} 0<\lambda<1.
+\sigma_t^2 = (1-\lambda)r_{t-1}^2 + \lambda\sigma_{t-1}^2 = (1-\lambda) \sum_{i = 1}^\infty\lambda^{i-1}r_{t-i}^2, \hspace{0.5em} 0<\lambda<1.
 $$
 
 Different values of the parameter $\lambda$ are used in order to see how the results depend on it. From the theoretical point of view, we know that the term $(1-\lambda)r_{t-1}^2$ determines the reaction of volatility to market events, i.e. the larger the term $(1-\lambda)$ the larger the reaction in the volatility stemming from yesterday's return. Moreover, the term $\lambda\sigma_{t-1}^2$ determines the persistence in volatility. In other terms, it decides how much of yesterday's volatility is allowed to persist to today's volatility: A larger value of $\lambda$ gives larger persistence. Thus, the EWMA model gives a trade-off between persistence and reaction in the volatility, depending on the value of $\lambda$. 
@@ -652,7 +652,7 @@ NOTE THAT THE TIMES ON THE X-AXIS ARE FUCKED UP. TRY TO FIX THIS LATER! THIS IS 
 
 ## Calculation and Interpretation of VaR 
 
-Here we will calculate and interpret the Value at Risk (VaR) using estimated volatilities from several different models. First we use the variance-covariance method, calculating the VaR with a static forecast one time ahead, using the EGARCH model.
+Here we will calculate and interpret the Value at Risk (VaR) using estimated volatilities from several different models. First we use the variance-covariance method, calculating the VaR with a static forecast one time ahead, using the EGARCH model. Thus, this is an out-of-sample estimation of the VaR. 
 
 ```{r VaR, cache = T}
 forc <- ugarchforecast(m.egarch, n.ahead=1, n.roll= 0)
@@ -663,7 +663,7 @@ cat("VaR: ", show(var5.garch))
 
 This value means that, with a confidence level of 95\%, the largest expected loss for tomorrow in our index is $\approx 2.95$\%. In other terms, the probability of the return tomorrow being lower than -2.95\% is 5\%. 
 
-Next we calculate the VaR with a rolling window dynamic forecast, using the EGARCH model, with a significance level of 5\%.
+Next we calculate the VaR with a rolling window dynamic forecast (still out-of-sample), using the EGARCH model, with a significance level of 5\%. 
 
 ```{r, cache = T}
 var.t <-  ugarchroll(spec.egarch, data = rendixic, n.ahead = 1, forecast.length = 50, 
@@ -680,9 +680,10 @@ report(var.t, VaR.alpha = 0.05)
 ```
 
 The report above shows that our predefined level of 5\% significance is not kept, i.e. that the largest expected loss cannot be quantified at the 5\% significance level. Instead, the VaR is estimated to be 14%, which means that the probability of the return the next day being lower than the VaR is $\approx 14$% instead of 5%. In practice, this means that the company should set aside more funds than expected, in order to cover the predefined significance level of 5\%. 
-LITT USIKKER PÅ DENNE TOLKNINGEN!
 
-Next, we calculate the VaR using estimates of volatility from the EWMA model with $\lambda = 0.75$ and from the ARMA(2,2)-EGARCH model. Thus, this is an in-sample comparison of the two models when calculating volatility and VaR. 
+It is apparent that the EGARCH-based model severely underestimates the necessary funds to avoid exceeding the VaR, which is an indication that the model is not very well suited for use in practice, at least not for calculating VaR's. SJEKK AT JEG HAR SKREVET/ARGUMENTERT KORREKT. Because of this indication, we will try to do the same calculations with the GJR-GARCH-based model also, to see if the results are more promising. IN-SAMPLE ESTIMERINGEN VIL JEG AT SKAL KOMME FØR DETTE (OG FØR OUT OF SAMPLE!). 
+
+Next, we calculate the VaR using estimates of volatility from the EWMA model with $\lambda = 0.75$ and from the ARMA(2,2)-EGARCH model. Thus, this is an in-sample comparison of the two models when calculating volatility and VaR. THIS IS IN SAMPLE, PERHAPS DO THIS FIRST!!!
 
 ```{r ewma/VaR, cache = T}
 var5.ewma  <-  - qnorm(0.95) * sqrt(vol.ewma0.75)
@@ -715,7 +716,7 @@ cat("Fraction of sample where loss exceeds 1% VaR for EGARCH: ",sum(rendixic < v
 In a case where we choose a significance level of $\alpha = 0.01$ we can see that the EWMA model with $\lambda = 0.75$ overestimates the risk, since the fraction of the sample where the loss exceeds the 1\% VaR is 0. It also overestimates the risk slightly when chosing a significance level of $\alpha = 0.05$, since the fraction of the sample where the loss exceeds the 5\% VaR is around 3\%. In practice this means that the company in question is dedicating too much resources to the regulatory capital (minimum capital requirement).
 WHY DOES THE EGARCH FRACTION EXCEED 1\% THOUGH?
 
-This is a good example of how a GARCH model is advantageous compared to an EWMA model, since we use the data to estimate the model ("the data talks") and we need not to set a hyperparameter like $\lambda$ which the results depend largely on. 
+This is a good example of how a GARCH model is advantageous compared to an EWMA model, since we use the data to estimate the model ("the data talks") optimally with maximum likelihood and we need not to set a hyperparameter like $\lambda$ which the results depend largely on. Another advantage to note concerning the use of GARCH models over EWMA is that the reaction (typically $\alpha$_i) and persistence (typically $\beta$_i) coefficients are estimated separately, which means that there is no defined trade-off between the two, as is the case in the EWMA. 
 
 Redoing the calculations with the EWMA model with $\lambda = 0.95$ instead gives the fractions
 
@@ -939,7 +940,8 @@ dcc.garch11.spec <- dccspec(uspec = multispec(c(spec1, spec2)), dccOrder = c(1,1
 (dcc.fit <- dccfit(dcc.garch11.spec, data = returns))
 ```
 
-WHAT ASSUMPTIONS NEED TO BE FULFILLED FOR THIS MODEL!?
+The positivity and stationarity conditions of the DCC hold, because `dcca1` and `dccb1` are both positive and their sum is less than one. The first parameter can be used to interpret the response in the correlation to the news, which has a relatively low estimated value in this case. The second parameter can be used to interpret the persistence of the correlation. This value is relatively close to one, which means that the persistence of the correlation is relatively large. OTHER ASSUMPTIONS THAT NEED TO BE FULFILLED?
+KOMMENTER PÅ DE ULIKE ESTIMATENE HER OGSÅ!
 
 ## Estimated Correlation and News Impact Surface
 
@@ -993,16 +995,9 @@ STEMMER DET AT DET ER KORRELASJONEN SOM ENDRES I NEWS IMPACT CURVE OVER, OG IKKE
 
 # QUESTIONS FOR PROFE: 
 
-* Generelt: Er hun interessert i å se kode i rapporten, eller bare resulater med diskusjon? Hvor mye av output fra tester etc kan sløyfes?
-* Correct to talk about returns, when they are calculated as diff(log(IXIC))? Or should these be called "continuously compounded returns"?
-* Spør om ekstra plot under 3.5!? Har (rendixic - mean(rendixic))^2 noe sammenheng med ACF av residuals^2? Estimador insesgado?
-* In GARCH models: WHY CHOOSE A T-STUDENT OVER A NORMAL (OR VICE VERSA)?
-* Is positivity needed for GJR-GARCH as well? Because this is used to reject the possiblity of using GJR-GARCH as a model for the variance!
 * Positivity and stationarity assumptions for EGARCH? Looks like positivity is not needed! But is stationarity an assumption that needs to be fulfilled in the model?
-* Value of gamma in EGARCH: Opposite of how we defined it? Se kommentarer i selve oppgaven (side 19/20).
-* News impact curve for EGARCH: Veldig merkelig kurve, noe galt? Eller er dette noe som kan skje?
+* Value of gamma in EGARCH: Opposite of how we defined it? Se kommentarer i selve oppgaven (side 19/20). IN GENERAL: HOW CAN THE PARAMETERS OF THE EGARCH ESTIMATED HERE BE INTERPRETED? THEY USE A DIFFERENT PARAMETRIZATION THAN WHAT WE DID IN SLIDES, SEE DOCS!
 * When does the predicted volatility go towards the unconditional variance?
 * Har noe trøbbel med tolkning av VaR (lese gjennom stoff først kanskje!). Noe jeg burde spørre om ift det?
 * Why does the EGARCH VaR exceed the 1\% level when using 0.01 as a significance level?
-* What assumptions need to be fulfilled in the DCC Multivariate GARCH?
 * Interpretations in the multivariate case: From the correlation and from the news impact surface?
