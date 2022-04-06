@@ -58,7 +58,7 @@ The NASDAQ Composite Index (IXIC) is analyzed from 01.01.2012 to 01.03.2022 (255
 
 As noted, the data is downloaded from [Yahoo Finance](https://finance.yahoo.com/). This is a free portal that aggregates financial information like market news, stock prices, personal finance information, portfolio management resources and much more. 
 
-The mean and conditional variance of the financial time series are modelized, in order to study its volatility. The volatility models can be used to learn several things about the index. First of all, they can be used to predict and interpret future volatility. Additionally, they can be used to interpret the impact of news on the index. Moreover, they can be used to calculate the Value at Risk (VaR). All of these applications are shown in this work. Finally, a multivariate analysis is done, explicitly including the stock of Stratus Properties Inc. (STRS), in order to study some multivariate properties between the two financial time series. Note that STRS is one of the top [30 components](https://finance.yahoo.com/quote/%5EIXIC/components?p=%5EIXIC) of IXIC. DESCRIBE THE STRATUS PROPERTIES INC COMPANY/STOCK AS WELL!!
+The mean and conditional variance of the financial time series are modelized, in order to study its volatility. The volatility models can be used to learn several things about the index. First of all, they can be used to predict and interpret future volatility. Additionally, they can be used to interpret the impact of news on the index. Moreover, they can be used to calculate the Value at Risk (VaR). All of these applications are shown in this work. Finally, a multivariate analysis is done, explicitly including the stock of [Stratus Properties Inc.](https://www.stratusproperties.com/profile/) (STRS), in order to study some multivariate properties between the two financial time series. Note that STRS is one of the top [30 components](https://finance.yahoo.com/quote/%5EIXIC/components?p=%5EIXIC) of IXIC. Stratus Properties Inc. is a publicly traded company, listed on the NASDAQ. It is a real estate company located in Austin, Texas. As they write on their website, they are "primarily engaged in the acquisition, entitlement, development, management, operation and sale of commercial, hotel, entertainment, and multi- and single-family residential real estate properties, primarily located in the Austin, Texas area, but including projects in certain other select markets in Texas". 
 
 The table of contents is shown below. The rest of the report is split into a univariate part and a multivariate part, where the univariate part is the largest and most detailed. Part 3.1 loads and describes the data in a concise fashion, detailing some events that may be related to the changes in the daily adjusted closing price. Section 3.2 analyzes the stationarity of the series, which leads to the conclusion that IXIC is in fact non-stationary. The returns of the series are stationary however, which means that they are used in the remainder of the work instead. Section 3.3 presents some basic statistical properties of the returns. Section 3.4 and 3.5 build models for the mean and variance, respectively, of the stationary series. Section 3.6 presents a grafic and interpretation of the volatility series estimated by the model found in previous sections, while section 3.7 shows the news impact curve of the modelized series. Part 3.8 does volatility predictions and interpretations, based on the models estimated previously. Section 3.9 calculates volatility with two other methods which have not been used earlier in the work; historical volatility and Exponentially Weighted Moving Average (EWMA). Finally in section 3, part 3.10 calculates and interprets the Value at Risk (VaR). The second main part of the report treats a multivariate analysis of IXIC, coupled with STRS. In section 4.1 a multivariate DCC GARCH model is fitted to the residuals of the time series. In this case, the identification, estimation and diagnostics of the models for the mean and variance of the returns of STRS is not shown. Section 4.2 estimates the correlation between the two financial series and shows the news impact surface, which is the bivariate equivalent to the news impact curve. Finally, a conclusion of the work is formulated. 
 
@@ -652,38 +652,9 @@ NOTE THAT THE TIMES ON THE X-AXIS ARE FUCKED UP. TRY TO FIX THIS LATER! THIS IS 
 
 ## Calculation and Interpretation of VaR 
 
-Here we will calculate and interpret the Value at Risk (VaR) using estimated volatilities from several different models. First we use the variance-covariance method, calculating the VaR with a static forecast one time ahead, using the EGARCH model. Thus, this is an out-of-sample estimation of the VaR. 
+Here we will calculate and interpret the Value at Risk (VaR) using estimated volatilities from several different models. 
 
-```{r VaR, cache = T}
-forc <- ugarchforecast(m.egarch, n.ahead=1, n.roll= 0)
-show(forc)
-var5.garch <- - qnorm(0.95) * 0.01791
-cat("VaR: ", show(var5.garch))
-```
-
-This value means that, with a confidence level of 95\%, the largest expected loss for tomorrow in our index is $\approx 2.95$\%. In other terms, the probability of the return tomorrow being lower than -2.95\% is 5\%. 
-
-Next we calculate the VaR with a rolling window dynamic forecast (still out-of-sample), using the EGARCH model, with a significance level of 5\%. 
-
-```{r, cache = T}
-var.t <-  ugarchroll(spec.egarch, data = rendixic, n.ahead = 1, forecast.length = 50, 
-              refit.every = 10,  refit.window = "rolling",
-              calculate.VaR = TRUE, VaR.alpha = 0.05)
-```
-
-```{r, echo = F}
-plot(var.t, which = 4, VaR.alpha = 0.05)
-```
-
-```{r}
-report(var.t, VaR.alpha = 0.05)
-```
-
-The report above shows that our predefined level of 5\% significance is not kept, i.e. that the largest expected loss cannot be quantified at the 5\% significance level. Instead, the VaR is estimated to be 14%, which means that the probability of the return the next day being lower than the VaR is $\approx 14$% instead of 5%. In practice, this means that the company should set aside more funds than expected, in order to cover the predefined significance level of 5\%. 
-
-It is apparent that the EGARCH-based model severely underestimates the necessary funds to avoid exceeding the VaR, which is an indication that the model is not very well suited for use in practice, at least not for calculating VaR's. SJEKK AT JEG HAR SKREVET/ARGUMENTERT KORREKT. Because of this indication, we will try to do the same calculations with the GJR-GARCH-based model also, to see if the results are more promising. IN-SAMPLE ESTIMERINGEN VIL JEG AT SKAL KOMME FØR DETTE (OG FØR OUT OF SAMPLE!). 
-
-Next, we calculate the VaR using estimates of volatility from the EWMA model with $\lambda = 0.75$ and from the ARMA(2,2)-EGARCH model. Thus, this is an in-sample comparison of the two models when calculating volatility and VaR. THIS IS IN SAMPLE, PERHAPS DO THIS FIRST!!!
+First we calculate the VaR using estimates of volatility from the EWMA model with $\lambda = 0.75$ and from the ARMA(2,2)-EGARCH model. Thus, this is an in-sample comparison of the two models when calculating VaR using volatility estimations. 
 
 ```{r ewma/VaR, cache = T}
 var5.ewma  <-  - qnorm(0.95) * sqrt(vol.ewma0.75)
@@ -704,7 +675,7 @@ plot(Fechas, rendixic, type="l", main ="1% VaR E-GARCH(1,1)")
 lines(Fechas, var1.egarch, col ="red")
 ```
 
-The plots above show the estimated VaR's with the two different models, at two different significance levels (5\% shown in blue and 1\% shown in red), plotted together with the returns. To the naked eye it looks like the returns don't sink below the 1\% VaR very often, while they sink below the 5\% VaR somewhat more often, but still rarely. To quantify this, we calculate the fraction of the sample where the loss in returns exceeds each of the significance levels for the two models. USIKKER PÅ DENNE TOLKNINGEN OGSÅ!!?
+The plots above show the estimated VaRs with the two different models, at two different significance levels (5\% shown in blue and 1\% shown in red), plotted together with the returns. To the naked eye it looks like the returns don't sink below the 1\% VaR very often, while they sink below the 5\% VaR somewhat more often, but still rarely. To quantify this, we calculate the fraction of the sample where the loss in returns exceeds each of the significance levels for the two models.
 
 ```{r, echo = F}
 cat("Fraction of sample where loss exceeds 5% VaR for EWMA: ", sum(rendixic < var5.ewma)/length(rendixic)) 
@@ -713,10 +684,9 @@ cat("Fraction of sample where loss exceeds 1% VaR for EWMA: ",sum(rendixic < var
 cat("Fraction of sample where loss exceeds 1% VaR for EGARCH: ",sum(rendixic < var1.egarch)/length(rendixic)) 
 ```
 
-In a case where we choose a significance level of $\alpha = 0.01$ we can see that the EWMA model with $\lambda = 0.75$ overestimates the risk, since the fraction of the sample where the loss exceeds the 1\% VaR is 0. It also overestimates the risk slightly when chosing a significance level of $\alpha = 0.05$, since the fraction of the sample where the loss exceeds the 5\% VaR is around 3\%. In practice this means that the company in question is dedicating too much resources to the regulatory capital (minimum capital requirement).
-WHY DOES THE EGARCH FRACTION EXCEED 1\% THOUGH?
+For both significance levels, we can see that the EWMA model overestimates the risk, since the fraction is much lower than necessary to meet the required significance level; in a case where we choose a significance level of $\alpha = 0.01$ we can see that the EWMA model with $\lambda = 0.75$ overestimates the risk, since the fraction of the sample where the loss exceeds the 1\% VaR is 0. It also overestimates the risk when choosing a significance level of $\alpha = 0.05$, since the fraction of the sample where the loss exceeds the 5\% VaR is around 3\%. In practice this means that, based on volatility calculations using this model, the company is dedicating too much resources to the regulatory capital (minimum capital requirement). 
 
-This is a good example of how a GARCH model is advantageous compared to an EWMA model, since we use the data to estimate the model ("the data talks") optimally with maximum likelihood and we need not to set a hyperparameter like $\lambda$ which the results depend largely on. Another advantage to note concerning the use of GARCH models over EWMA is that the reaction (typically $\alpha$_i) and persistence (typically $\beta$_i) coefficients are estimated separately, which means that there is no defined trade-off between the two, as is the case in the EWMA. 
+On the other hand, the EGARCH-based model underestimates the risk, because the predefined significance level is violated in both cases. Since the EGARCH-based model does not give satisfactory in-sample predictions of VaR, we will in the following redo the calculations with the GJR-GARCH-based model, in order to check if that model performs any better. However, before redoing the calculations with ARMA(2,2)-GJR-GARCH, we will redo the EWMA-based calculations with a different value of $\lambda$ and do out-of-sample predictions of VaR, in order to further quantify the performance of the models. 
 
 Redoing the calculations with the EWMA model with $\lambda = 0.95$ instead gives the fractions
 
@@ -730,7 +700,96 @@ cat("Fraction of sample where loss exceeds 5% VaR for EWMA: ", sum(rendixic < va
 cat("Fraction of sample where loss exceeds 1% VaR for EWMA: ",sum(rendixic < var1.ewma)/length(rendixic))
 ```
 
-These results are very similar to the results obtained when using the EGARCH, but we still have to choose the hyperparameter $\lambda$, which is not a trivial task. 
+These results are very similar to the results obtained when using the EGARCH, which now instead underestimate the risk. Thus, one of the main downfalls of the EWMA model again comes to show; the result is highly dependent on the value of the hyperparameter $\lambda$, which is not a trivial choice.  
+
+Next we use the variance-covariance method, calculating the VaR with a static forecast one time ahead, using the EGARCH-based model. Thus, this is an out-of-sample estimation of the VaR. 
+
+```{r VaR, cache = T}
+forc <- ugarchforecast(m.egarch, n.ahead=1, n.roll= 0)
+show(forc)
+var5.garch <- - qnorm(0.95) * 0.01791
+cat("VaR: ", var5.garch)
+```
+
+This value means that, with a confidence level of 95\%, the largest expected loss for tomorrow in our index is $\approx 2.95$\%. In other terms, the probability of the return tomorrow being lower than -2.95\% is 5\%. 
+
+Next we calculate the VaR with a rolling window dynamic forecast (still out-of-sample), using the EGARCH-based model, with a significance level of 5\%. 
+
+```{r, cache = T}
+var.t <-  ugarchroll(spec.egarch, data = rendixic, n.ahead = 1, forecast.length = 50, 
+              refit.every = 10,  refit.window = "rolling",
+              calculate.VaR = TRUE, VaR.alpha = 0.05)
+```
+
+```{r, echo = F}
+plot(var.t, which = 4, VaR.alpha = 0.05)
+```
+
+```{r, echo = F}
+report(var.t, VaR.alpha = 0.05)
+```
+
+The report above shows that our predefined level of 5\% significance is violated, i.e. that the largest expected loss cannot be quantified at the 5\% significance level. Instead, the VaR is estimated to be 14%, which means that the probability of the return the next day being lower than the VaR is $\approx 14$% instead of 5%. In practice, this means that the company should set aside more funds than expected, in order to cover the predefined significance level of 5\%. As already noted during the in-sample estimations, it is apparent that the EGARCH-based model severely underestimates the risk, which is an indication that the model is not very well suited for use in practice, at least not for calculating VaRs. 
+
+The in-sample and out-of-sample estimations of VaR are redone using an ARMA(2,2)-GJR-GARCH. 
+
+```{r}
+v.gjr <- sigma(mgjr) 
+var5.gjr.garch <- - qnorm(0.95) * v.gjr
+var1.gjr.garch <-  - qnorm(0.99) * v.gjr
+```
+
+Without printing any values to the reader, notice that the conditional sigma values of the EGARCH-based model (`v`) and the GJR-GARCH-based model (`v.gjr`) look very similar. This already gives an indication of the fact that the in-sample estimations of VaR most likely will be similar when using the two models. 
+
+The plots for each of the significance levels are given, with the fractions of exceedances below. 
+
+```{r, echo = F}
+par(mfrow=c(1,2), cex=0.6, mar=c(2,2,3,1))
+plot(Fechas, rendixic,type="l", main ="5% VaR GJR-GARCH")
+lines(Fechas,var5.gjr.garch, col ="blue")
+plot(Fechas, rendixic, type="l", main ="1% VaR GJR-GARCH")
+lines(Fechas, var1.gjr.garch, col ="red")
+```
+
+```{r, echo = F}
+cat("Fraction of sample where loss exceeds 5% VaR for GJR-GARCH: ",sum(rendixic < var5.gjr.garch)/length(rendixic)) 
+cat("Fraction of sample where loss exceeds 1% VaR for GJR-GARCH: ",sum(rendixic < var1.gjr.garch)/length(rendixic)) 
+```
+
+The fractions are very similar to the fractions obtained with the EGARCH-based model, which indicates that the in-sample performance of the two models are very similar. Both models underestimate the risk.
+
+Next, we redo the out-of-sample estimations. 
+
+The variance-covariance method is used, calculating the VaR with a static forecast one time ahead, this time using the GJR-GARCH-based model.
+
+```{r VaR-GJR, cache = T}
+forc <- ugarchforecast(mgjr, n.ahead=1, n.roll= 0)
+show(forc)
+var5.gjr.garch <- - qnorm(0.95) * 0.01849
+cat("VaR: ", var5.gjr.garch)
+```
+
+Compared to the value of $2.95\%$ obtained with the EGARCH-based model, these results are very similar and the conclusions are the same. 
+
+Next we calculate the VaR with a rolling window dynamic forecast (still out-of-sample), using the GJR-GARCH-based model, with a significance level of 5\%. 
+
+```{r, cache = T}
+var.t.gjr <-  ugarchroll(spec.mgjr, data = rendixic, n.ahead = 1, forecast.length = 50, 
+              refit.every = 10,  refit.window = "rolling",
+              calculate.VaR = TRUE, VaR.alpha = 0.05)
+```
+
+```{r, echo = F}
+plot(var.t.gjr, which = 4, VaR.alpha = 0.05)
+```
+
+```{r, echo = F}
+report(var.t.gjr, VaR.alpha = 0.05)
+```
+
+The plot and the report is still relatively similar to the ones obtained when using the EGARCH-based model. However, we can see that the amount of exceedances is reduced to 5 instead of 7. This can be viewed as an improvement over the performance of the EGARCH-based model, even though the predefined significance level of $5\%$ is still violated. The conclusion is still the same as earlier: the company should set aside more funds than expected, in order to cover the predefined significance level. 
+
+Before continuing, a quick note on the advantages of GARCH-based models over EWMA models is given. This section gives an explicit example of how a GARCH model is advantageous compared to an EWMA model, since we use the data to estimate the model ("the data talks") optimally with maximum likelihood and we need not to set a hyperparameter like $\lambda$ which the results depend largely on. Another advantage to note concerning the use of GARCH models over EWMA is that the reaction (typically $\alpha$_i) and persistence (typically $\beta$_i) coefficients are estimated separately, which means that there is no defined trade-off between the two, as is the case in the EWMA. 
 
 # Multivariate Analysis
 
@@ -765,6 +824,8 @@ tibble("date" = as.Date(STRS[-c(1),1]), rendstrs) %>% ggplot(aes(x = date, y = r
 ```
 
 Analysis of stationarity shows that this series is integrated of order 1 as well, similarly to IXIC. Thus, we work with the returns of the series instead of the series itself. 
+
+REDO THIS TO CHECK IF GJR-GARCH IS BETTER IN THIS CASE AS WELL!
 
 ```{r analysisOfSTRS, eval = F, echo = F}
 par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1) 
@@ -940,18 +1001,17 @@ dcc.garch11.spec <- dccspec(uspec = multispec(c(spec1, spec2)), dccOrder = c(1,1
 (dcc.fit <- dccfit(dcc.garch11.spec, data = returns))
 ```
 
-The positivity and stationarity conditions of the DCC hold, because `dcca1` and `dccb1` are both positive and their sum is less than one. The first parameter can be used to interpret the response in the correlation to the news, which has a relatively low estimated value in this case. The second parameter can be used to interpret the persistence of the correlation. This value is relatively close to one, which means that the persistence of the correlation is relatively large. OTHER ASSUMPTIONS THAT NEED TO BE FULFILLED?
-KOMMENTER PÅ DE ULIKE ESTIMATENE HER OGSÅ!
+The positivity and stationarity conditions of the DCC hold, because `dcca1` and `dccb1` are both positive and their sum is less than one. The first parameter can be used to interpret the response in the correlation to the news, which has a relatively low estimation in this case. The second parameter can be used to interpret the persistence of the correlation. This value is relatively close to one, which means that the persistence of the correlation is relatively large. 
 
 ## Estimated Correlation and News Impact Surface
 
-The plot below shows the conditional standard error estimated from the model (in blue) and the realized absolute returns (in grey). 
+The plot below shows the conditional standard error estimated from the model (in blue) and the realized absolute returns (in grey). Disregard the years shown on the x-axis. The time period of the data is the same as earlier. 
 
 ```{r, echo = F, fig.height = 7}
-plot(dcc.fit, which = 2)
+plot(dcc.fit, which = 2, xaxt = "n")
 ```
 
-From this plot we can gather that the model has made good estimations of the standard error, because the behaviour of the graphs are similar. Note that we cannot conclude anything based on the absolute values of the quantities; we are only interested in the shape or the behaviour of the quantities.  THE AXES ARE FUCKED UP HERE AS WELL!
+From this plot we can gather that the model has made good estimations of the standard error, because the behaviour of the graphs are similar. Note that we cannot conclude anything based on the absolute values of the quantities; we are only interested in the shape or the behaviour of the quantities. 
 
 The plot below shows the correlation between the two series estimated from the model. 
 
@@ -975,8 +1035,6 @@ ggplot(aes(x = date, y = value)) +
 
 Just by looking at the two time series side by side, they look like they move in a similar fashion. However, STRS exhibits more volatile behaviour, i.e. it does not increase as stably as IXIC, likely because we are comparing one individual stock to an index. The peak in the correlation between the two series, which corresponds to a correlation of about 0.45, took place in the beginning of 2020, when both prices fell, most likely because of the outburst of COVID-19. One of the stylized facts about financial time series (daily returns) becomes apparent here; the correlation between assets increases during highly-volatile periods, particularly during crashes. 
 
-OTHER THAN THAT, I AM NOT QUITE CERTAIN THAT I AM ABLE TO INTERPRET ANYTHING ELSE FROM THE PLOTS. 
-
 The news impact surface is plotted below. 
 
 ```{r, results='hide'}
@@ -985,19 +1043,10 @@ nisurface(dcc.fit, type="cor")
 
 From this we can learn that 
 
-* Simultaneous negative news in both series lead to the largest increase in correlation ????.
-* Simultaneous positive news in both series lead to an increase in correlation ??? as well, but not to the same extent that the negative shocks do. This shows that the leverage effect has been taken into account in the model. 
-* Negative news in one of the series and positive news in the other leads to a negative correlation ???, which (again) shows that the leverage effect is taken into account, since the negative news clearly get a larger weight than the positive news. 
-
-STEMMER DET AT DET ER KORRELASJONEN SOM ENDRES I NEWS IMPACT CURVE OVER, OG IKKE VOLATILITY!?!?!
+* Simultaneous negative news in both series lead to the largest increase in correlation
+* Simultaneous positive news in both series leads to an increase in correlation as well, but not to the same extent as the negative shocks. This shows that the leverage effect has been taken into account in the model. 
+* Increasingly negative news in one of the series and positive news in the other leads to an increasingly negative correlation, which (again) shows that the leverage effect is taken into account, since the negative news clearly are weighted more than the positive news. 
 
 # Conclusions 
 
-# QUESTIONS FOR PROFE: 
 
-* Positivity and stationarity assumptions for EGARCH? Looks like positivity is not needed! But is stationarity an assumption that needs to be fulfilled in the model?
-* Value of gamma in EGARCH: Opposite of how we defined it? Se kommentarer i selve oppgaven (side 19/20). IN GENERAL: HOW CAN THE PARAMETERS OF THE EGARCH ESTIMATED HERE BE INTERPRETED? THEY USE A DIFFERENT PARAMETRIZATION THAN WHAT WE DID IN SLIDES, SEE DOCS!
-* When does the predicted volatility go towards the unconditional variance?
-* Har noe trøbbel med tolkning av VaR (lese gjennom stoff først kanskje!). Noe jeg burde spørre om ift det?
-* Why does the EGARCH VaR exceed the 1\% level when using 0.01 as a significance level?
-* Interpretations in the multivariate case: From the correlation and from the news impact surface?
