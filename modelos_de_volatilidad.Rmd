@@ -4,13 +4,13 @@ subtitle: "Final Project - Volatility Models - Financial Statistics"
 author: "Alexander J Ohrt"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
-  # html_document:
-  #   code_folding: show
-  #   toc: true
-  #   toc_depth: 3
-  #   theme: readable
-  #   highlight: textmate
-  #   number_sections: true
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    theme: readable
+    highlight: textmate
+    number_sections: true
   pdf_document:
     fig_caption: true
     number_sections: true
@@ -45,7 +45,7 @@ knitr::knit_hooks$set(chunk = function(x, options) {
 ```
 
 # Abstract
-The NASDAQ Composite Index (IXIC) is studied using data from 01.01.2012 to 01.03.2022. The mean and variance of the series are modeled. The work shows that the volatility of the returns of the index, which is a stationary process, can be modeled by a ARMA(2,2)-EGARCH model. Moreover, it shows that the GARCH-based models are more reliable for volatility modeling than the use of historical volatility or EWMA, without the need of setting any hyperparameters. Lastly, it shows that a multivariate DCC GARCH model can be used to model the correlation between two stationary series, in this case the correlation between the returns of IXIC and the returns of the Stratus Properties Inc. stock, which is one of the components of the index. 
+The NASDAQ Composite Index (IXIC) is studied using data from 01.01.2012 to 01.03.2022. The mean and variance of the series are modeled. The work shows that the volatility of the returns of the index, which is a stationary process, can be modeled by an ARMA(2,2)-EGARCH model. Moreover, it shows that the GARCH-based models are more reliable for volatility modeling than the use of historical volatility or EWMA, without the need of setting any hyperparameters. Lastly, it shows that a multivariate DCC GARCH model can be used to model the correlation between two stationary series, in this case the correlation between the returns of IXIC and the returns of the Stratus Properties Inc. stock, which is one of the components of the index. 
 
 \newpage
 # Introduction 
@@ -54,9 +54,9 @@ The NASDAQ Composite Index (IXIC) is analyzed from 01.01.2012 to 01.03.2022 (255
 
 As noted, the data is downloaded from [Yahoo Finance](https://finance.yahoo.com/). This is a free portal that aggregates financial information like market news, stock prices, personal finance information, portfolio management resources and much more. 
 
-The mean and conditional variance of the financial time series are modelized, in order to study its volatility. The volatility models can be used to learn several things about the index. First of all, they can be used to predict and interpret future volatility. Additionally, they can be used to interpret the impact of news on the index. Moreover, they can be used to calculate the Value at Risk (VaR). All of these applications are shown in this work. Finally, a multivariate analysis is done, explicitly including the stock of [Stratus Properties Inc.](https://www.stratusproperties.com/profile/) (STRS), in order to study some multivariate properties between the two financial time series. Note that STRS is one of the top [30 components](https://finance.yahoo.com/quote/%5EIXIC/components?p=%5EIXIC) of IXIC. Stratus Properties Inc. is a publicly traded company, listed on the NASDAQ. It is a real estate company located in Austin, Texas. As they write on their website, they are "primarily engaged in the acquisition, entitlement, development, management, operation and sale of commercial, hotel, entertainment, and multi- and single-family residential real estate properties, primarily located in the Austin, Texas area, but including projects in certain other select markets in Texas". 
+The mean and conditional variance of the financial time series are modelized, in order to study its volatility. The volatility models can be used to learn several things about the index. First of all, they can be used to predict and interpret future volatility. Additionally, they can be used to interpret the impact of news on the index. Moreover, they can be used to calculate the Value at Risk (VaR). Examples of all of these applications are given in this work. Finally, a multivariate analysis is done, explicitly including the stock of [Stratus Properties Inc.](https://www.stratusproperties.com/profile/) (STRS), in order to study some multivariate properties between the two financial time series. Note that STRS is one of the top [30 components](https://finance.yahoo.com/quote/%5EIXIC/components?p=%5EIXIC) of IXIC. Stratus Properties Inc. is a publicly traded company, listed on the NASDAQ. It is a real estate company located in Austin, Texas. As they write on their website, they are "primarily engaged in the acquisition, entitlement, development, management, operation and sale of commercial, hotel, entertainment, and multi- and single-family residential real estate properties, primarily located in the Austin, Texas area, but including projects in certain other select markets in Texas". 
 
-The table of contents is shown below. The rest of the report is split into a univariate part and a multivariate part, where the univariate part is the largest and most detailed. Part 3.1 loads and describes the data in a concise fashion, detailing some events that may be related to the changes in the daily adjusted closing price throughout the sample. Section 3.2 analyzes the stationarity of the series, which leads to the conclusion that IXIC is in fact non-stationary. The returns of the series are stationary however, which means that they are used in the remainder of the work instead. Section 3.3 presents some basic statistical properties of the returns. Section 3.4 and 3.5 build models for the mean and variance, respectively, of the stationary series. Section 3.6 presents a grafic and interpretation of the volatility series estimated by the model found in previous sections, while section 3.7 shows the news impact curve of the modelized series. Part 3.8 does volatility predictions and interpretations, based on the models estimated previously. Section 3.9 calculates volatility with two other methods which have not been used earlier in the work; historical volatility and Exponentially Weighted Moving Average (EWMA). Finally in section 3, part 3.10 calculates and interprets the Value at Risk (VaR). The second main part of the report treats a multivariate analysis of IXIC, coupled with STRS. In section 4.1 a multivariate DCC GARCH model is fitted to the returns of the time series. For brevity, the identification, estimation and diagnostics of the models for the mean and variance of the returns of STRS is not shown. Section 4.2 estimates the correlation between the two financial series and shows the news impact surface, which is the bivariate equivalent to the news impact curve. Finally, a conclusion of the work is formulated. 
+The table of contents is shown below. The rest of the report is split into a univariate part and a multivariate part, where the univariate part is the largest and most detailed. Part 3.1 loads and describes the data in a concise fashion, detailing some events that may be related to the changes in the daily adjusted closing price throughout the sample. Section 3.2 analyzes the stationarity of the series, which leads to the conclusion that IXIC is in fact non-stationary. The returns of the series are stationary however, which means that they are used in the remainder of the work instead. Section 3.3 presents some basic statistical properties of the returns. Section 3.4 and 3.5 build models for the mean and variance, respectively, of the stationary series. Section 3.6 presents a grafic and interpretation of the volatility series estimated by the model found in previous sections, while section 3.7 shows the news impact curve of the modelized series. Part 3.8 does volatility predictions and interpretations, based on the models estimated previously. Section 3.9 calculates volatility with two other methods which have not been used earlier in the work; historical volatility and Exponentially Weighted Moving Average (EWMA). Finally in section 3, part 3.10 calculates and interprets the Value at Risk (VaR). The second main part of the report treats a multivariate analysis of IXIC, coupled with STRS. In section 4.1 a multivariate DCC GARCH model is fitted to the returns of the time series. For brevity, the identification, estimation and diagnostics of the models for the mean and variance of the returns of STRS is not shown, but the results are simply stated. Section 4.2 estimates the correlation between the two financial series and shows the news impact surface, which is the bivariate equivalent to the news impact curve. Finally, a conclusion of the work is formulated. 
 
 \newpage
 \tableofcontents
@@ -80,7 +80,7 @@ any(is.na(Ixic))
 ixic <- Ixic[,6] # Want the adjusted closing price. 
 ```
 
-The data does not have any NA values (weekends and holidays have been removed already), such that we can start working with the data without the need to replace missing values. The series is plotted below. 
+The data does not have any NA values (weekends and holidays have been removed already), such that we can start working with the data without the need to replace missing values. Notice that we will be working with the daily adjusted closing prices of the index. The series is plotted below. 
 
 ```{r, echo = F}
 tibble("date" = as.Date(Ixic[,1]), ixic) %>% ggplot(aes(x = date, y = ixic)) +
@@ -93,7 +93,7 @@ tibble("date" = as.Date(Ixic[,1]), ixic) %>% ggplot(aes(x = date, y = ixic)) +
 We note some important moments during the time in question. The index fell in January 2016, perhaps in relation to the [2015-2016 stock market sellof](https://en.wikipedia.org/wiki/2015%E2%80%932016_stock_market_selloff) or a slowdown in China and falling oil prices, as noted [here](https://money.cnn.com/2016/01/29/investing/dow-january-2016-worst-month/). In January 2019 there was a stock market crash, perhaps following an [announcement](https://finance.yahoo.com/news/stock-market-news-jan-4-145702705.html) from Apple's CEO Tim Cook. Moreover, the market slump was perhaps dependent on weak Chinese manufacturing data, as noted [here](https://www.theguardian.com/business/live/2019/jan/02/stocks-start-2019-in-retreat-as-china-factory-output-shrinks-business-live). The relatively large fall in price in the beginning of 2020 was a result of the spread of COVID-19. This event lead up to the fall in the beginning of 2022, when Russia eventually launched an invasion on Ukraine on February 24. 
 
 ## Analysis of Stationarity
-In order to see if the series is stationary, we will employ both informal and formal tests. Immediately, by looking at the plot of the series, it does not look stationary, since the mean of the process looks to change quite dramatically with time. Some more informal tests are done. The function of autocorrelation and partial autocorrelation (empirical) for the series are plotted below. 
+In order to see if the series is stationary, we will employ both informal and formal tests. Immediately, by looking at the plot of the series, it does not look stationary, since the mean of the process looks to change quite dramatically with time. Some more informal tests are done. The functions of autocorrelation and partial autocorrelation (empirical) for the series are plotted below. 
 
 ```{r, echo = F}
 par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1) 
@@ -216,7 +216,7 @@ acf(rendixic,ylim=c(-1,1),main="rendixic")
 pacf(rendixic,ylim=c(-1,1),main="rendixic")
 ```
 
-Note that the third coefficient of both ACF and PACF seems to be non-significant, which might be a hint to what order of model would be fitting. Notice also that both the ACF and the PACF have significant coefficients after the third lag; 6, 7, 8 and 9 seem to be significant. An ARMA of order 6, 7, 8 or 9 seems like a too large order of model to estimate, so we will try with smaller models instead, noting that the third coefficient is non-significant. The table below shows the BIC and the AIC for different orders of ARMA-models. The largest model that is considered is ARMA(3,2) (or ARMA(2,3)), since an ARMA(3,3) yields NaNs in the estimates. 
+Note that the third coefficient of both ACF and PACF seems to be non-significant, which might be a hint to what order of model would be fitting to use. Notice also that both the ACF and the PACF have significant coefficients after the third lag; 6, 7, 8 and 9 seem to be significant. An ARMA of order 6, 7, 8 or 9 seems like a too large order of model to estimate, so we will try with smaller models instead, noting that the third coefficient is non-significant. The table below shows the BIC and the AIC for different orders of ARMA-models. The largest model that is considered is ARMA(3,2) (or ARMA(2,3)), since an ARMA(3,3) yields NaNs in the estimates. 
 
 ```{r, echo = F, results='hide'}
 #ar(1)
@@ -316,7 +316,7 @@ normalTest(residuals,method="jb")
 
 It is apparent that the residuals have heavy tails. It is not reasonable to assume normality of the residuals, an argument that the Jarque-Bera Normality test further substantiates because its null hypothesis of normality is rejected following the very small $p$-value. 
 
-Finally, the residuals of the estimated model are plotted, with the returns of IXIC superposed in faint red. Notice that, qualitatively, they look similar, which indicates that the model for the mean does not have a whole lot of explicative power on the returns. 
+Finally, the residuals of the estimated model are plotted, with the returns of IXIC superposed in faint red. Notice that, qualitatively, they look similar, which could indicate that the model for the mean does not have a whole lot of explicative power on the returns. 
 
 ```{r, echo = F, warning=FALSE}
 tibble("date" = as.Date(Ixic[-c(1),1]), residuals, rendixic) %>% 
@@ -384,7 +384,7 @@ spec.mgjr <- ugarchspec(variance.model=list(model="gjrGARCH", garchOrder = c(1,1
 mgjr.AIC <- -6.4923
 ```
 
-The stationarity condition holds, since $\hat{\alpha}_1 + \hat{\beta}_1 + \frac12 \hat{\gamma} \approx$ `r round(0.823974 + 0.5*0.260477, 3)` $<1$. Moreover, the positivity condition holds, since $\hat{\alpha}_1 \geq 0$ and $\hat{\beta}_1 \geq 0$. Notice that the AIC is lower for this model compared to the standard model and the residuals do not present sufficient autocorrelation according to the plots below. Notice that several of the ARMA-parameter estimates are not significant to a reasonable level, which is found to be the case no matter what `armaOrder` is used in the estimation. The parameters $\alpha_1$, $\beta_1$ and $\gamma_1$ can be interpreted as; $\alpha_1$ measures the reaction of conditional volatility due to market shocks. The estimate is equal to zero and is not significant in this case, which means that it will not be used to quantify this reaction. $\beta_1$ measures the persistence of conditional volatility, which has an estimate of $\hat{\beta}_1 \approx 0.82$ in this case, which is not regarded as large. $\gamma_1$ measures the extra reaction of the conditional volatility due to negative market shocks. In this case, $\hat{\gamma}_1$ is positive and significant, which means that the volatility increase is more pronounced following a negative return compared to a positive return of the same size. Couple this with the observation that $\hat{\alpha}_1 \sim 0$, we can interpret that the volatility reactions only take place for negative news, which will become apparent in the news impact curve later on. 
+The stationarity condition holds, since $\hat{\alpha}_1 + \hat{\beta}_1 + \frac12 \hat{\gamma} \approx$ `r round(0.823974 + 0.5*0.260477, 3)` $<1$. Moreover, the positivity condition holds, since $\hat{\alpha}_1 \geq 0$ and $\hat{\beta}_1 \geq 0$. Notice that the AIC is lower for this model compared to the standard model and the residuals do not present sufficient autocorrelation for rejection according to the plots below. Notice that several of the ARMA-parameter estimates are not significant to a reasonable level, which is found to be the case no matter what `armaOrder` is used in the estimation. The parameters $\alpha_1$, $\beta_1$ and $\gamma_1$ can be interpreted as; $\alpha_1$ measures the reaction of conditional volatility due to market shocks. The estimate is equal to zero and is not significant in this case, which means that it will not be used to quantify this reaction. $\beta_1$ measures the persistence of conditional volatility, which has an estimate of $\hat{\beta}_1 \approx 0.82$ in this case, which is not regarded as large. $\gamma_1$ measures the extra reaction of the conditional volatility due to negative market shocks. In this case, $\hat{\gamma}_1$ is positive and significant, which means that the volatility increase is more pronounced following a negative return compared to a positive return of the same size. Couple this with the observation that $\hat{\alpha}_1 \sim 0$, we can interpret that the volatility reactions only take place for negative news, which will become apparent in the news impact curve later on. 
 
 ```{r, echo = F}
 par(mfrow=c(1,2),font=2,font.lab=4,font.axis=2,las=1)
@@ -452,7 +452,7 @@ ggplot(aes(x = Date, y = value)) +
   facet_grid(rows = vars(distribution), scales = "free")
 ```
 
-The general behaviour seems to match relatively well, i.e. the movements in the plots coincide relatively well. Days with larger (absolute) returns coincide with days with larger estimated volatilities. Note that we cannot compare the absolute values in plot however. 
+The general behaviour seems to match relatively well, i.e. the movements in the plots coincide relatively well. Days with larger (absolute) returns coincide with days with larger estimated volatilities. Note that we cannot compare the absolute values in the plots however. 
 
 ```{r, warning = F, echo = F, eval = F}
 returnsabs <- abs(rendixic)
@@ -684,9 +684,9 @@ var5.garch <- - qnorm(0.95) * 0.01791
 cat("VaR: ", var5.garch)
 ```
 
-This value means that, with a confidence level of 95\%, the largest expected loss for tomorrow in our index is $\approx 2.95$\%. In other terms, the probability of the return tomorrow being lower than -2.95\% is 5\%. 
+This value means that, with a confidence level of 95\%, the largest expected loss for tomorrow in our index is $\approx 2.95$\%. In other terms, the probability of the return tomorrow being lower than -2.95\% is 0.05. 
 
-Next we calculate the VaR with a rolling window dynamic forecast, using the EGARC model, with a significance level of 5\%. 
+Next we calculate the VaR with a rolling window dynamic forecast, using the EGARCH model, with a significance level of 5\%. 
 
 ```{r, cache = T}
 var.t <-  ugarchroll(spec.egarch, data = rendixic, n.ahead = 1, forecast.length = 50, 
@@ -702,7 +702,7 @@ plot(var.t, which = 4, VaR.alpha = 0.05)
 report(var.t, VaR.alpha = 0.05)
 ```
 
-The report shows that our predefined level of 5\% significance is violated, i.e. that the largest expected loss cannot be quantified at the 5\% significance level. Instead, the VaR is estimated to be 14%, which means that the probability of the return the next day being lower than the VaR is $\approx 14$% instead of 5%. In practice, this means that the company should set aside more funds than expected, in order to cover the predefined significance level of 5\%. As already noted during the in-sample estimations, it is apparent that the EGARCH model severely underestimates the risk, which is an indication that the model is not very well suited for use in practice, at least not for calculating VaRs. 
+The report shows that our predefined level of 5\% significance is violated, i.e. that the largest expected loss cannot be quantified at the 5\% significance level. Instead, the VaR is estimated to be 14%, which means that the probability of the return the next day being lower than the VaR is $\approx 0.14$ instead of 0.05. In practice, this means that the company should set aside more funds than expected, in order to cover the predefined significance level of 5\%. As already noted during the in-sample estimations, it is apparent that the EGARCH model severely underestimates the risk, which is an indication that the model is not very well suited for use in practice, at least not for calculating VaRs. 
 
 The in-sample and out-of-sample estimations of VaR are redone using an ARMA(2,2)-GJR-GARCH. 
 
@@ -740,7 +740,7 @@ var5.gjr.garch <- - qnorm(0.95) * 0.01849
 cat("VaR: ", var5.gjr.garch)
 ```
 
-Compared to the value of $2.95\%$ obtained with the EGARCH model, these results are very similar and the conclusions are the same. 
+Compared to the value of $-2.95\%$ obtained with the EGARCH model, these results are very similar and the conclusions are the same. 
 
 The VaR is calculated with a rolling window dynamic forecast, using the GJR-GARCH model, with a significance level of 5\%. 
 
@@ -760,7 +760,7 @@ report(var.t.gjr, VaR.alpha = 0.05)
 
 The plot and the report are still relatively similar to the ones obtained when using the EGARCH model. However, we can see that the amount of exceedances is reduced to 5 instead of 7. This can be viewed as an improvement over the performance of the EGARCH model, even though the predefined significance level of $5\%$ is still violated. The conclusion is still the same as earlier: the company should set aside more funds than expected, in order to cover the predefined significance level. 
 
-Before continuing, a quick note on the advantages of GARCH models over EWMA models is given. This section gives an explicit example of how a GARCH model is advantageous compared to an EWMA model, since we use the data to estimate the model ("the data talks") optimally with maximum likelihood and we need not to set a hyperparameter like $\lambda$ which the results depend largely on. Another advantage to note concerning the use of GARCH models over EWMA is that the reaction (typically $\alpha_i$) and persistence (typically $\beta_i$) coefficients are estimated separately, which means that there is no defined trade-off between the two, as is the case in the EWMA. 
+Before continuing, a quick note on the advantages of GARCH models over EWMA models is given. This section gives an explicit example of how a GARCH model is advantageous compared to an EWMA model, since we use the data to estimate the model ("the data talks") optimally with maximum likelihood and we need not set a hyperparameter like $\lambda$ which the results depend largely on. Another advantage to note concerning the use of GARCH models over EWMA is that the reaction (typically $\alpha_i$) and persistence (typically $\beta_i$) coefficients are estimated separately, which means that there is no defined trade-off between the two, as is the case in the EWMA. 
 
 # Multivariate Analysis
 
