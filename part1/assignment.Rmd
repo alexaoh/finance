@@ -1,0 +1,157 @@
+---
+title: "Assignment"
+subtitle: "Option Pricing and Risk - Financial Statistics"
+author: "Alexander J Ohrt"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    theme: readable
+    highlight: textmate
+    number_sections: true
+  pdf_document:
+    fig_caption: true
+    number_sections: true
+    toc: false
+editor_options: 
+  chunk_output_type: console
+geometry:
+  margin = 2.2cm
+urlcolor: blue
+linkcolor: black
+---
+
+```{r setup, include=FALSE}
+rm(list = ls())
+knitr::opts_chunk$set(echo = T, warning = F, fig.width = 10, comment = "#>", size = "scriptsize")
+setwd("/home/ajo/gitRepos/finance/part1")
+library(ggplot2)
+library(tidyverse)
+```
+
+# Problem A - Euler-Maruyama Method
+
+First we implement a discretization for the Black-Scholes-Merton price dynamics with the given parameter set, with $n = 250$ steps. We generate $M_1 = 10$, $M_2 = 100$, $M_3 = 1000$, $M_4 = 10000$ and $M_5 = 100000$ paths and plot the paths in separate figures. 
+
+```{r}
+set.seed(061999)
+s0 <- 12
+T1 <- 1
+mu <- 0.03
+sigma <- 0.17
+n <-  250
+t <- seq(0, T1, length.out = n)
+M1 <- 10
+M2 <- 100
+M3 <- 1000
+M4 <- 10000
+M5 <- 100000
+```
+
+```{r}
+# Price path stochastic process. 
+price.path <- function(s0, t, mu, sigma){
+  W <- rnorm(n = length(t), mean = 0, sd = t)
+  s0*exp(mu*t)*exp(sigma*W-sigma^2/2*t)
+}
+```
+
+```{r}
+#plot(NULL, NULL, main = paste0(M1," paths"), xlim = c(0,1), ylim = c(0, 50), ylab = "S", xlab = "t")
+M1.paths <- matrix(rep(NA, length.out = M1*n), nrow = M1)
+for (i in 1:M1){
+  M1.paths[i,] <- price.path(s0, t, mu, sigma)
+}
+#lines(M1.paths, col = 1:M1)
+#df1 <- tibble(M1.paths)
+#df1 %>% ggplot()
+
+# Burde lage denne plotting bedre med ggplot senere kanskje!
+# Endre til tid på x-aksen også kanskje!
+matplot(t(tibble(M1.paths)), type = "l", main = paste0(M1," paths"), xlab = "Discretization Points", ylab = "S")
+```
+
+```{r}
+#plot(NULL, NULL, main = paste0(M1," paths"), xlim = c(0,1), ylim = c(0, 50), ylab = "S", xlab = "t")
+M2.paths <- matrix(rep(NA, length.out = M2*n), nrow = M2)
+for (i in 1:M2){
+  M2.paths[i,] <- price.path(s0, t, mu, sigma)
+}
+#lines(M1.paths, col = 1:M1)
+#df2 <- tibble(M2.paths)
+#df1 %>% ggplot()
+
+# Burde lage denne plotting bedre med ggplot senere kanskje!
+# Endre til tid på x-aksen også kanskje!
+#M2.p <- tibble(M2.paths)
+matplot(M2.paths, type = "l", main = paste0(M2," paths"), xlab = "Discretization Points", ylab = "S")
+lines(t, apply(M2.paths, 2, mean), cex = 2)
+```
+
+Dette skal gjøres for alle verdiene for M over! (gjør etter at plottingen er fikset!)
+
+TESTING CODE BELOW COMPARING TO SLIDE 33. Tror noe er galt!
+
+```{r}
+n2 <- 100
+Mtest.paths <- matrix(rep(NA, length.out = M1*n2), nrow = M1)
+for (i in 1:M1){
+  Mtest.paths[i,] <- price.path(10, seq(0, 5, length.out = n2), 
+                                0.05, 0.05)
+}
+#lines(M1.paths, col = 1:M1)
+#df2 <- tibble(M2.paths)
+#df1 %>% ggplot()
+
+# Burde lage denne plotting bedre med ggplot senere kanskje!
+# Endre til tid på x-aksen også kanskje!
+matplot(t(tibble(Mtest.paths)), type = "l", main = paste0(M1," paths"), xlab = "Discretization Points", ylab = "S", ylim = c(0,20))
+```
+
+ÅPENBART AT NOE ER GALT HER!
+
+Prøvde å få denne til å ligne på plot på slide 33 i Section 2.2, men mine paths varierer veldig mye! Tror det er noe galt i koden for pathsene muligens!!
+
+The Monte Carlo estimator for $\hat{S}_T$ is calculated separately for each of the values of $M_i$. The 5\% confidence interval is provided for each estimator. A comparison between these estimators and the analytical solution of $\mathbb{E}(S_T)$ (seen above) is done and differences are explained. 
+
+# Problem B - Option Pricing I
+
+```{r}
+set.seed(061999)
+s0 <- 24
+T1 <- 1.5
+r <- 0.02
+sigma <- 0.22
+K <- 23.5
+```
+
+
+```{r, eval = F}
+# BSM pricing formula for European call option, 
+# to calculate the fair price at t = 0 in closed form.
+BSM <- function(s0, T1, r, sigma, K){
+  d1 <- (log(s0/K)+(r+sigma^2/2)*T1)/(sigma*sqrt(T1))
+  print(d1)
+  d2 <- d1 - sigma*sqrt(T1)
+  print(d2)
+  print(pnorm(d1))
+  print(pnorm(d2))
+  s0*pnorm(d1) - exp(-r*T1)*K*pnorm(d2)  
+}
+
+# Test with result on slide 48.
+BSM(35, 0.5, 0.05, 0.25, 35.5)
+# Looks correct!^
+```
+
+We implement a Monte Carlo estimator for this option price by simulation paths with the Euler-Maruyama method for given steps and paths. 
+
+# Problem C - Option Pricing II
+
+A Monte Carlo estimator is implemented for a specific Asian Call Option. 
+
+```{r}
+set.seed(061999)
+```
