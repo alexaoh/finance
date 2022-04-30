@@ -42,7 +42,8 @@ T1 <- 1
 mu <- 0.03
 sigma <- 0.17
 n <-  250
-t <- seq(0, T1, length.out = n)
+t <- seq(0, T1, length.out = n+1) # n steps means n+1 points in this vector. 
+h <- t[2] - t[1] # h = T1/n gives the same result. 
 M1 <- 10
 M2 <- 100
 M3 <- 1000
@@ -59,62 +60,202 @@ price.path <- function(s0, t, mu, sigma){
 ```
 
 ```{r}
-#plot(NULL, NULL, main = paste0(M1," paths"), xlim = c(0,1), ylim = c(0, 50), ylab = "S", xlab = "t")
-M1.paths <- matrix(rep(NA, length.out = M1*n), nrow = M1)
+# Generate the price paths for all the given number of paths. 
+M1.paths <- matrix(rep(NA, length.out = M1*(n+1)), nrow = M1)
 for (i in 1:M1){
-  M1.paths[i,] <- price.path(s0, t, mu, sigma)
+  M1.paths[i,] <- price.path(s0 = s0, t = t, mu = mu, sigma = sigma)
 }
+
+M2.paths <- matrix(rep(NA, length.out = M2*(n+1)), nrow = M2)
+for (i in 1:M2){
+  M2.paths[i,] <- price.path(s0, t, mu, sigma)
+}
+
+M3.paths <- matrix(rep(NA, length.out = M3*(n+1)), nrow = M3)
+for (i in 1:M3){
+  M3.paths[i,] <- price.path(s0, t, mu, sigma)
+}
+
+M4.paths <- matrix(rep(NA, length.out = M4*(n+1)), nrow = M4)
+for (i in 1:M4){
+  M4.paths[i,] <- price.path(s0, t, mu, sigma)
+}
+
+M5.paths <- matrix(rep(NA, length.out = M5*(n+1)), nrow = M5)
+for (i in 1:M5){
+  M5.paths[i,] <- price.path(s0, t, mu, sigma)
+}
+```
+
+
+```{r}
+#plot(NULL, NULL, main = paste0(M1," paths"), xlim = c(0,1), ylim = c(0, 50), ylab = "S", xlab = "t")
+
 #lines(M1.paths, col = 1:M1)
 #df1 <- tibble(M1.paths)
 #df1 %>% ggplot()
 
 # Burde lage denne plotting bedre med ggplot senere kanskje!
 # Endre til tid på x-aksen også kanskje!
-matplot(t(tibble(M1.paths)), type = "l", main = paste0(M1," paths"), xlab = "Discretization Points", ylab = "S")
+matplot(t(M1.paths), type = "l", main = paste0(M1," paths"), xlab = "Discretization Points", ylab = "S")
 ```
 
 ```{r}
-#plot(NULL, NULL, main = paste0(M1," paths"), xlim = c(0,1), ylim = c(0, 50), ylab = "S", xlab = "t")
-M2.paths <- matrix(rep(NA, length.out = M2*n), nrow = M2)
-for (i in 1:M2){
-  M2.paths[i,] <- price.path(s0, t, mu, sigma)
-}
-#lines(M1.paths, col = 1:M1)
-#df2 <- tibble(M2.paths)
-#df1 %>% ggplot()
-
 # Burde lage denne plotting bedre med ggplot senere kanskje!
 # Endre til tid på x-aksen også kanskje!
 #M2.p <- tibble(M2.paths)
-matplot(M2.paths, type = "l", main = paste0(M2," paths"), xlab = "Discretization Points", ylab = "S")
-lines(t, apply(M2.paths, 2, mean), cex = 2)
-```
+matplot(t(M2.paths), type = "l", main = paste0(M2," paths"), xlab = "Discretization Points", ylab = "S")
+lines(apply(M2.paths, 2, mean), cex = 2)
+lines(s0*exp(mu*t))
 
-Dette skal gjøres for alle verdiene for M over! (gjør etter at plottingen er fikset!)
+matplot(t(M3.paths), type = "l", main = paste0(M3," paths"), xlab = "Discretization Points", ylab = "S")
+```
 
 TESTING CODE BELOW COMPARING TO SLIDE 33. Tror noe er galt!
 
 ```{r}
 n2 <- 100
-Mtest.paths <- matrix(rep(NA, length.out = M1*n2), nrow = M1)
-for (i in 1:M1){
-  Mtest.paths[i,] <- price.path(10, seq(0, 5, length.out = n2), 
-                                0.05, 0.05)
+Mtest.paths <- matrix(rep(NA, length.out = M2*(n2+1)), nrow = M2)
+t <- seq(0, 5, length.out = n2+1)
+s0 <- 10
+for (i in 1:M2){
+  Mtest.paths[i,] <- price.path(s0 = s0, t = t, 
+                                mu = 0.05, sigma = 0.05) 
 }
-#lines(M1.paths, col = 1:M1)
+#lines(M1.paths, col = 1:M1) 
 #df2 <- tibble(M2.paths)
 #df1 %>% ggplot()
 
+m <- apply(Mtest.paths, 2, mean)
+
 # Burde lage denne plotting bedre med ggplot senere kanskje!
 # Endre til tid på x-aksen også kanskje!
-matplot(t(tibble(Mtest.paths)), type = "l", main = paste0(M1," paths"), xlab = "Discretization Points", ylab = "S", ylim = c(0,20))
+matplot(t(Mtest.paths), type = "l", main = paste0(M2," paths"), xlab = "Discretization Points", ylab = "S", ylim = c(0,20))
+lines(m)
+lines(s0*exp(0.05*t))
 ```
 
-ÅPENBART AT NOE ER GALT HER!
+ÅPENBART AT NOE ER GALT HER! TROR DEN VARIERER ALT FOR MYE!
 
-Prøvde å få denne til å ligne på plot på slide 33 i Section 2.2, men mine paths varierer veldig mye! Tror det er noe galt i koden for pathsene muligens!!
+TESTING: Prøvde å få denne til å ligne på plot på slide 33 i Section 2.2, men mine paths varierer veldig mye! Tror det er noe galt i koden for pathsene muligens!!
 
-The Monte Carlo estimator for $\hat{S}_T$ is calculated separately for each of the values of $M_i$. The 5\% confidence interval is provided for each estimator. A comparison between these estimators and the analytical solution of $\mathbb{E}(S_T)$ (seen above) is done and differences are explained. 
+The Monte Carlo estimator for $\hat{S}_T$ is calculated separately for each of the values of $M_i$. The 5\% confidence interval is provided for each estimator. A comparison between these estimators and the analytical solution of $\mathbb{E}(S_T)$ is done and differences are explained. 
+
+```{r}
+# Calculate the Monte-Carlo estimator of $\hat{S}_T$ for each of the values of $M_i$.
+hat_ST <- function(M, n){
+  mean(M[,n+1]) # Calculate mean over last value of all M_i paths. 
+}
+# This simply calculates the average over the last value of all the different paths. 
+
+CI_ST <- function(M, n){
+  s <- sd(M[,n+1]) # Calculate sample standard deviation over last value of all M_i paths. 
+  m <- hat_ST(M, n) # Calculate mean.
+  ste <- qnorm(0.975)*s/sqrt(dim(M)[[1]])
+  return(list(l = m - ste, u = m + ste))
+}
+```
+
+```{r}
+M1.hat <- hat_ST(M1.paths, n) 
+CI1 <- CI_ST(M1.paths, n)
+M2.hat <- hat_ST(M2.paths, n) 
+CI2 <- CI_ST(M2.paths, n)
+M3.hat <- hat_ST(M3.paths, n) 
+CI3 <- CI_ST(M3.paths, n)
+M4.hat <- hat_ST(M4.paths, n) 
+CI4 <- CI_ST(M4.paths, n)
+M5.hat <- hat_ST(M5.paths, n) 
+CI5 <- CI_ST(M5.paths, n)
+
+col1 <- rbind(M1.hat, CI1$l, CI1$u)
+col2 <- rbind(M2.hat, CI2$l, CI2$u)
+col3 <- rbind(M3.hat, CI3$l, CI3$u)
+col4 <- rbind(M4.hat, CI4$l, CI4$u)
+col5 <- rbind(M5.hat, CI5$l, CI5$u)
+
+hats <- cbind(col1, col2, col3, col4, col5)
+colnames(hats) <- c("M1 = 10", "M2 = 100", "M3 = 1000", "M4 = 10000", "M5 = 100000") 
+rownames(hats) <- c("Est.", "Lower CI", "Upper CI")
+knitr::kable(hats, caption = "Monte Carlo Estimation for S_T, varying M")
+```
+
+Now, what is the analytical solution for $\mathbb{E}(S_T)$? The analytical solution is 
+
+```{r}
+# I think this is the analytical solution, but I am not certain!?
+s0*exp(mu+sigma^2/2)
+```
+
+Explain the differences and now and why the confidence intervals differ.
+
+Now we fix the number of paths $M^* = 1000$ and vary the values of n, i.e. the number of steps, while repeating the discussion done above. 
+
+```{r}
+M.star <- 1000
+n1 <- 12
+n2 <- 24
+n3 <- 250
+n4 <- 1000
+```
+
+```{r}
+# Find new paths. 
+n1.paths <- matrix(rep(NA, length.out = M.star*(n1+1)), nrow = M.star)
+for (i in 1:M.star){
+  t1 <- seq(0, T1, length.out = n1+1) # n steps means n+1 points in this vector. 
+  n1.paths[i,] <- price.path(s0, t1, mu, sigma)
+}
+
+n2.paths <- matrix(rep(NA, length.out = M.star*(n2+1)), nrow = M.star)
+for (i in 1:M.star){
+  t2 <- seq(0, T1, length.out = n2+1) # n steps means n+1 points in this vector. 
+  n2.paths[i,] <- price.path(s0, t2, mu, sigma)
+}
+
+n3.paths <- matrix(rep(NA, length.out = M.star*(n3+1)), nrow = M.star)
+for (i in 1:M.star){
+  t3 <- seq(0, T1, length.out = n3+1) # n steps means n+1 points in this vector. 
+  n3.paths[i,] <- price.path(s0, t3, mu, sigma)
+}
+
+n4.paths <- matrix(rep(NA, length.out = M.star*(n4+1)), nrow = M.star)
+for (i in 1:M.star){
+  t4 <- seq(0, T1, length.out = n4+1) # n steps means n+1 points in this vector. 
+  n4.paths[i,] <- price.path(s0, t4, mu, sigma)
+}
+```
+
+```{r, eval = F}
+# Burde nok helst unngå den transponerte, heller definere matrisen omvendt.
+matplot(t(n1.paths), type = "l")
+matplot(t(n2.paths), type = "l")
+matplot(t(n3.paths), type = "l")
+matplot(t(n4.paths), type = "l")
+```
+
+```{r}
+n1.hat <- hat_ST(n1.paths, n1) 
+CI1 <- CI_ST(n1.paths, n1)
+n2.hat <- hat_ST(n2.paths, n2) 
+CI2 <- CI_ST(n2.paths, n2)
+n3.hat <- hat_ST(n3.paths, n3) 
+CI3 <- CI_ST(n3.paths, n3)
+n4.hat <- hat_ST(n4.paths, n4) 
+CI4 <- CI_ST(n4.paths, n4)
+
+col1 <- rbind(n1.hat, CI1$l, CI1$u)
+col2 <- rbind(n2.hat, CI2$l, CI2$u)
+col3 <- rbind(n3.hat, CI3$l, CI3$u)
+col4 <- rbind(n4.hat, CI4$l, CI4$u)
+
+hats <- cbind(col1, col2, col3, col4)
+colnames(hats) <- c("n1 = 12", "n2 = 24", "n3 = 250", "n4 = 1000")
+rownames(hats) <- c("Est.", "Lower CI", "Upper CI")
+knitr::kable(hats, caption = "Monte Carlo Estimation for S_T, varying n")
+```
+
+Yes, the results differ (again). Discuss why!!
 
 # Problem B - Option Pricing I
 
@@ -128,7 +269,7 @@ K <- 23.5
 ```
 
 
-```{r, eval = F}
+```{r}
 # BSM pricing formula for European call option, 
 # to calculate the fair price at t = 0 in closed form.
 BSM <- function(s0, T1, r, sigma, K){
@@ -138,29 +279,15 @@ BSM <- function(s0, T1, r, sigma, K){
 }
 ```
 
-```{r}
-# Exercises on slide 45
-# Call price
-BSM(s0 = 20, K = 18, T1 = 1, r = 0.05, sigma = 0.2)
-# Put price
-BSM(s0 = 20, K = 18, T1 = 1, r = 0.05, sigma = 0.2)-20+exp(-0.05*1)*18
-
-# Call price
-BSM(s0 = 20, K = 18, T1 = 1, r = 0.05, sigma = 0.2)
-# Put price
-BSM(s0 = 20, K = 18, T1 = 1, r = 0.05, sigma = 0.2)-20+exp(-0.05*1)*18
-```
-
-
 We calculate the price of the given Call option (parameters are given in code block above) with the Black-Scholes-Merton formula.
 
 ```{r}
-BSM.price <- BSM(s0, T1, r, sigma, K)
+(BSM.price <- BSM(s0, T1, r, sigma, K))
 ```
 
 As we can see, the price is approximately equal to `r round(BSM.price, 2)`, when rounded to 2 decimals. 
 
-We implement a Monte Carlo estimator for this option price by simulation paths with the Euler-Maruyama method for given steps and paths. 
+We implement a Monte Carlo estimator for this option price by simulating paths with the Euler-Maruyama method for given steps and paths. 
 
 Notice that for the path-independent options, like standard European call and put options, it is not needed to save the price path as is done below. This is done to keep the function as general as possible, in order to re-use it for the rest of the assignment. THIS COULD EASILY BE CHANGED IN THIS CASE IF TOO SLOW! (simply overwriting the previous value in the loop in every iteration).
 
@@ -170,13 +297,13 @@ Notice that for the path-independent options, like standard European call and pu
 MC <- function(M, n, r, s0, mu, h, sigma, T1, payoff.profile, set.S, ...){
   C.values <- rep(NA, length.out = M) # Initiate vector for saving payoffs per path. 
   for (i in 1:M){ # Initiate loop for M path.
-    Z <- rnorm(n) # Generate n random variables standard normally. 
+    Z <- rnorm(n+1) # Generate n random variables standard normally. 
     S.values <- rep(NA, length.out = n+1) # Initiate vector for saving price path. 
     S.values[1] <- s0 # Initiate starting price at time t = 0. 
     for (j in 2:(n+1)){ # Loop for Euler-Maruyama - recursively estimate price path. 
       S.values[j] <- S.values[j-1] + mu*S.values[j-1]*h + sigma*S.values[j-1]*sqrt(h)*Z[j-1]
     }
-    S <- set.S(S.values, n) # Set expected price used in payoff-profile. 
+    S <- set.S(S.values) # Set expected price used in payoff-profile. 
     # Generality is kept using a helper function set.S.
     C.values[i] <- payoff.profile(S, K) # Calculate payoff for the path and save in C.values.
   }
@@ -196,20 +323,49 @@ Call.set.S <- function(S.values){
 }
 ```
 
+Assuming that $\mu = r$. 
+
 ```{r}
+M.list <- c(10, 100, 1000, 10000, 100000)
+n.list <- c(10, 100, 1000)
 # Simulate paths with the MC estimator and Euler-Maruyama. 
-# mu = 0? h = 1? Helt sikkert feil! Den må nok avgjøres basert på diskretiseringen (dvs steglengden er h tror jeg)
-MC(10, 10, r, s0, mu = 0, h = 1, sigma, T1, Call.profile, Call.set.S, K = K)
+combinations <- matrix(rep(NA, length.out = length(M.list)*length(n.list)), nrow = length(M.list))
+
+for (i in 1:length(M.list)){
+  for (j in 1:length(n.list)){
+    h <- T1/n.list[j]
+    combinations[i, j] <- MC(M = M.list[i], n = n.list[j], r = r, s0 = s0, mu = r, h = h, 
+                             sigma = sigma, T1 = T1, payoff.profile = Call.profile, set.S = Call.set.S, K = K)
+  }
+}
 ```
 
 
 ```{r}
 # Calculations of relative error and absolute error.
+rel.errors <- (BSM.price - combinations)/BSM.price
+abs.errors <- abs(BSM.price - combinations)
 ```
+
+```{r}
+# Tabulate the results.
+df.rel <- data.frame(rel.errors)
+rownames(df.rel) <- c("M = 10", "M = 100", "M = 1000", "M = 10000", "M = 100000")
+colnames(df.rel) <- c("n = 10", "n = 100", "n = 1000")
+
+df.abs <- data.frame(abs.errors)
+rownames(df.abs) <- c("M = 10", "M = 100", "M = 1000", "M = 10000", "M = 100000")
+colnames(df.abs) <- c("n = 10", "n = 100", "n = 1000")
+
+knitr::kable(df.rel, caption = "Relative Errors")
+knitr::kable(df.abs, caption = "Absolute Errors")
+```
+
+Interpretation of results in view of $n$ and $M$.
 
 TESTER MED EKSEMPLER I SLIDES!
 
-```{r}
+```{r, eval = F}
 # slide 21 Section 3
 mu <- 0.05
 sigma <- 0.2
@@ -231,7 +387,7 @@ S.values[length(S.values)]
 # This means that the inner loop with the Euler Method is correctly implemented at least!
 ```
 
-```{r}
+```{r, eval = F}
 MC <- function(M, n, r, s0, mu, h, sigma, T1, payoff.profile, set.S, ...){
   C.values <- rep(NA, length.out = M)
   for (i in 1:M){
@@ -253,7 +409,7 @@ MC <- function(M, n, r, s0, mu, h, sigma, T1, payoff.profile, set.S, ...){
 
 A Monte Carlo estimator is implemented for a specific Asian Call Option. 
 
-```{r}
+```{r, eval = F}
 set.seed(061999)
 
 # This function can be fed into the MC estimator instead. 

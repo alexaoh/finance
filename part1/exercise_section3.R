@@ -89,7 +89,7 @@ make.paths <- function(){
     S <- S.values[length(S.values)] # Choose last value for European call option price calculation.
     C.values[i] <- S
   }
-  mean(C.values) # Return discounted average payoff
+  mean(C.values) 
 }
 
 make.paths() # The result in the slides is 10.62, which is very close to mine!
