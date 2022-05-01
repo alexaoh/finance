@@ -397,7 +397,7 @@ MC <- function(M, n, r, s0, mu, h, sigma, T1, payoff.profile, set.S, ...){
     for (j in 2:(n+1)){
       S.values[j] <- S.values[j-1] + mu*S.values[j-1]*h + sigma*S.values[j-1]*sqrt(h)*Z[j-1]
     }
-    S <- set.S(S.values, n) # Generality is kept using a helper function set.S.
+    S <- set.S(S.values) # Generality is kept using a helper function set.S.
     C.values[i] <- payoff.profile(S, K)
   }
   exp(-r*T1)*mean(C.values) # Return discounted average payoff
@@ -407,14 +407,71 @@ MC <- function(M, n, r, s0, mu, h, sigma, T1, payoff.profile, set.S, ...){
 
 # Problem C - Option Pricing II
 
-A Monte Carlo estimator is implemented for a specific Asian Call Option. 
+A Monte Carlo estimator is implemented for a specific Asian Call Option. This Asian Call Option averages prices every Friday. We set $n = 252$ and assume that $n = 1$ is Monday. This means that we average the prices $t_5, t_{10}, t_{15}, \ldots$. The paypff profile for this option is thus $(\bar{S}-K)^+$, where $\bar{S}$ is the arithmetic average over all the prices $t_i, \hspace{0.2em} i \in \{5, 10, 15, \ldots\}$. We set $M = 10000$ and use the parameter set $(s_0, T, r, \sigma, K) = (20, 1, 0.02, 0.24, 20)$.
 
-```{r, eval = F}
+```{r}
 set.seed(061999)
+s0 <- 20
+T1 <- 1
+r <- 0.02
+sigma <- 0.24
+K <- 20
+n <- 252
 
 # This function can be fed into the MC estimator instead. 
-Asian.set.S <- function(S.values){
-  # Average prices every friday. 
-  # I think it still uses the same Call.profile (perhaps this function is not needed after all!)
+Asian.set.S <- function(S.values){ 
+  # We extract every 5th value and calculate their arithmetic mean.
+  mean(S.values[seq(5, length(S.values), 5)])
 }
+
+# Feed the payoff profile into the MC estimator. 
+# This is the same as the Call.profile above, so not needed!
+Asian.profile <- function(S, K){
+  max(0, S-K)
+}
+
+# Still assuming that mu = r.
+Asian.price <- MC(M = 10000, n = 252, r = 0.02, s0 = 20, mu = 0.02, h = 1/252, 
+   sigma = 0.24, T1 = 1, Asian.profile, Asian.set.S, K = 20)
 ```
+
+As we can see from the result above, the price estimated via the MC estimator is `r round(Asian.price, 2)`. THIS PRICE CAN PERHAPS BE CHECKED WITH A CALCULATOR ONLINE!
+
+A Monte Carlo estimator is implemented for a Lookback option with payoff profile $(S_{max}-K)^+$, where $S_{max}$ refers to the maximum price during the time to maturity of the option. We use the parameter set $(s_0, T, r, \sigma, K) = (22, 2, 0.02, 0.29, 20)$ THIS K IS NOT SPECIFIED IN THE PROBLEM DESCRIPTION, BUT I WILL JUST LEAVE IT HERE NOW!
+
+```{r}
+set.seed(061999)
+s0 <- 22
+T1 <- 2
+r <- 0.02
+sigma <- 0.29
+K <- 20
+n <- 1000
+M1 <- 1000
+M2 <- 10000
+M3 <- 100000
+
+# This function can be fed into the MC estimator instead. 
+lookback.set.S <- function(S.values){ 
+  # We return the maximum value among the S.values. 
+  max(S.values)
+}
+
+# Feed the payoff profile into the MC estimator. 
+# This is the same as the Call.profile above, so not needed!
+lookback.profile <- function(S, K){
+  max(0, S-K)
+}
+
+# Still assuming that mu = r.
+lookback.price <- MC(M = M2, n = n, r = s0, s0 = s0, mu = r, h = 1/M2, 
+   sigma = sigma, T1 = T1, lookback.profile, lookback.set.S, K = 20)
+```
+
+As we can see from the result above, the price estimated via the MC estimator is `r round(lookback.price, 2)`. THIS PRICE CAN PERHAPS BE CHECKED WITH A CALCULATOR ONLINE!
+
+```{r}
+# We calculate CIs of this option price for the different values of M.
+
+```
+
