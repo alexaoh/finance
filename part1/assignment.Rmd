@@ -29,6 +29,7 @@ knitr::opts_chunk$set(echo = T, warning = F, fig.width = 10, comment = "#>", siz
 setwd("/home/ajo/gitRepos/finance/part1")
 library(ggplot2)
 library(tidyverse)
+library(reshape2)
 ```
 
 # Problem A - Euler-Maruyama Method
@@ -51,11 +52,14 @@ M4 <- 10000
 M5 <- 100000
 ```
 
+SKJØNNER IKKE HELT HVORFOR DETTE EGENTLIG GJØRES!? MÅ TENKE LITT MER PÅ HVORFOR CUMSUM BRUKES, MEN JEG SKJØNNER AT DET JEG GJORDE FØRST BLIR FEIL, FOR DA AVHENGER DET AV DISKRETISERINGEN!
+
 ```{r}
 # Price path stochastic process. 
 price.path <- function(s0, t, mu, sigma){
-  W <- rnorm(n = length(t), mean = 0, sd = t)
-  s0*exp(mu*t)*exp(sigma*W-sigma^2/2*t)
+  Wt <- rnorm(n = length(t)) # Draw length(t) standard normally distributed variables. 
+  W2 <- cumsum(Wt)*sqrt(t[2]-t[1]) # Step size is constant, grid is uniform. We calculate the cumulative sum of the standard normal draw to simulate the Wiener process, which is N(0,t) at time t, i.e. the variance increases when the process is run further and further away from t = 0. Notice that we also multiply by the (uniform) stepsize used on the (uniform) grid, in order to transform the N(0,1) values to N(0,t). 
+  s0*exp(mu*t)*exp(sigma*W2-sigma^2/2*t)
 }
 ```
 
@@ -92,12 +96,21 @@ for (i in 1:M5){
 #plot(NULL, NULL, main = paste0(M1," paths"), xlim = c(0,1), ylim = c(0, 50), ylab = "S", xlab = "t")
 
 #lines(M1.paths, col = 1:M1)
-#df1 <- tibble(M1.paths)
-#df1 %>% ggplot()
+# df1 <- data.frame(M1.paths)
+# df2 <- melt(df1)
+# df2$rowid <- 1:M1
+# df2 %>% ggplot(aes(variable, value, group=factor(rowid))) + 
+#   geom_line(aes(color=factor(rowid)))
+
+# plot(df1[1,])
+
+# Ser ikke noe bedre ut når plottingen er gjort med ggplot. 
+#plot(t, M1.paths[1,], type = "l")
 
 # Burde lage denne plotting bedre med ggplot senere kanskje!
 # Endre til tid på x-aksen også kanskje!
 matplot(t(M1.paths), type = "l", main = paste0(M1," paths"), xlab = "Discretization Points", ylab = "S")
+lines(s0*exp(mu*t)) # Drift / "mean value".
 ```
 
 ```{r}
@@ -111,14 +124,15 @@ lines(s0*exp(mu*t))
 matplot(t(M3.paths), type = "l", main = paste0(M3," paths"), xlab = "Discretization Points", ylab = "S")
 ```
 
-TESTING CODE BELOW COMPARING TO SLIDE 33. Tror noe er galt!
+TESTING CODE BELOW COMPARING TO SLIDE 33. SER BEDRE UT NÅ, MEN SKJØNNER IKKE HELT HVORFOR?
 
 ```{r}
-n2 <- 100
-Mtest.paths <- matrix(rep(NA, length.out = M2*(n2+1)), nrow = M2)
+n2 <- 200 # points
+M <- 10 # paths
+Mtest.paths <- matrix(rep(NA, length.out = M*(n2+1)), nrow = M)
 t <- seq(0, 5, length.out = n2+1)
 s0 <- 10
-for (i in 1:M2){
+for (i in 1:M){
   Mtest.paths[i,] <- price.path(s0 = s0, t = t, 
                                 mu = 0.05, sigma = 0.05) 
 }
@@ -130,14 +144,14 @@ m <- apply(Mtest.paths, 2, mean)
 
 # Burde lage denne plotting bedre med ggplot senere kanskje!
 # Endre til tid på x-aksen også kanskje!
-matplot(t(Mtest.paths), type = "l", main = paste0(M2," paths"), xlab = "Discretization Points", ylab = "S", ylim = c(0,20))
+matplot(t(Mtest.paths), type = "l", main = paste0(M," paths"), xlab = "Discretization Points", ylab = "S", ylim = c(0,20))
 lines(m)
 lines(s0*exp(0.05*t))
 ```
 
-ÅPENBART AT NOE ER GALT HER! TROR DEN VARIERER ALT FOR MYE!
+DETTE SER MYE BEDRE UT!!
 
-TESTING: Prøvde å få denne til å ligne på plot på slide 33 i Section 2.2, men mine paths varierer veldig mye! Tror det er noe galt i koden for pathsene muligens!!
+TESTING: Prøvde å få denne til å ligne på plot på slide 33 i Section 2.2, og det ser bedre ut nå.
 
 The Monte Carlo estimator for $\hat{S}_T$ is calculated separately for each of the values of $M_i$. The 5\% confidence interval is provided for each estimator. A comparison between these estimators and the analytical solution of $\mathbb{E}(S_T)$ is done and differences are explained. 
 
