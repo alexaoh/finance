@@ -13,15 +13,18 @@ output:
     number_sections: true
   pdf_document:
     fig_caption: true
-    number_sections: true
+    number_sections: false
     toc: false
 editor_options: 
   chunk_output_type: console
 geometry:
-  margin = 2.2cm
+  margin = 2.0cm
 urlcolor: blue
 linkcolor: black
 ---
+
+\tableofcontents
+\newpage
 
 ```{r setup, include=FALSE}
 rm(list = ls())
@@ -34,7 +37,7 @@ library(reshape2)
 
 # Problem A - Euler-Maruyama Method
 
-First we implement a discretization for the Black-Scholes-Merton (BSM) price dynamics with the given parameter set, with $n = 250$ steps. We generate $M_1 = 10$, $M_2 = 100$, $M_3 = 1000$, $M_4 = 10000$ and $M_5 = 100000$ paths. The paths are plotted in separate figures for the three first cases. 
+First we implement a discretization for the Black-Scholes-Merton (BSM) price dynamics with the parameter set $(s_0, T, \mu, \sigma) = (12, 1, 0.03, 0.17)$, with $n = 250$ steps. We generate $M_1 = 10$, $M_2 = 100$, $M_3 = 1000$, $M_4 = 10000$ and $M_5 = 100000$ paths. The paths are plotted in separate figures for the three first cases. 
 
 ```{r}
 set.seed(061999)
@@ -69,9 +72,26 @@ VIL HAN HA EULER-MARUYAMA HER OG IKKE DENNE FORMELEN? DET ER ENKELT Å BYTTE UT,
 ```{r, echo = T}
 # Price path stochastic process. 
 price.path <- function(s0, t, mu, sigma){
-  Wt <- rnorm(n = length(t), sd = sqrt(t[2]-t[1])) # Draw length(t) normally distributed variables with mean 0 and standard deviation h. 
-  W2 <- cumsum(Wt) # Step size is constant, grid is uniform. We calculate the cumulative sum of the standard normal draw to simulate the Wiener process, which is N(0,t) at time t, i.e. the variance increases when the process is run further and further away from t = 0. Notice that we also multiply by the (uniform) stepsize used on the (uniform) grid, in order to transform the N(0,1) values to N(0,t). 
-  s0*exp(mu*t)*exp(sigma*W2-sigma^2/2*t)
+  #Wt <- rnorm(n = length(t), sd = sqrt(t[2]-t[1])) # Draw length(t) normally distributed 
+  #variables with mean 0 and standard deviation h. 
+  #W2 <- cumsum(Wt) # Step size is constant, grid is uniform. We calculate the cumulative 
+  #sum of the standard normal draw to simulate the Wiener process, which is N(0,t) at 
+  #time t, i.e. the variance increases when the process is run further and further away 
+  #from t = 0. Notice that we also multiply by the (uniform) stepsize used on the 
+  #(uniform) grid, in order to transform the N(0,1) values to N(0,t). 
+  #s0*exp(mu*t)*exp(sigma*W2-sigma^2/2*t)
+  
+  # Byttet ut her i tilfelle det var det han ville!
+  # t-aksen trengs ikke i dette tilfellet da! Bedre å bare bruke n!
+  n <- length(t)-1
+  Z <- rnorm(n)
+  S.values <- rep(NA, length.out = n+1)
+  S.values[1] <- s0
+  h <- t[2]-t[1]
+  for (j in 2:(n+1)){
+    S.values[j] <- S.values[j-1] + mu*S.values[j-1]*h + sigma*S.values[j-1]*sqrt(h)*Z[j-1]
+  }
+  S.values
 }
 
 # VIL HAN EGENTLIG HA EULER-MARUYAMA HER TIL Å LAGE HVER PATH I STEDET!? ELLER ER DETTE OK? 
@@ -123,7 +143,7 @@ axis(1, at=seq(0,n, by = 10), labels = seq(0,1,length.out = n/10+1))
 
 The Monte Carlo estimator for $\hat{S}_T$ is calculated separately for each of the values of $M_i, \hspace{0.5em} i \in \{1,2,3,4,5\}$. The 95\% confidence interval (CI) is provided for each estimator. A comparison between these estimators and the analytical solution of $\mathbb{E}(S_T)$ is done and differences are explained. 
 
-The Monte Carlo estimator for $\hat{S}_T$ is simply calculated by averaging the values of all the different BSM price paths plotted above at time $T = 1$. The $(1-\alpha)\% = (1-0.05)\% = 95\%$ CIs are calculated by finding the standard error of the values of all the different BSM price paths at time $T$ and using the approximation given by 
+The Monte Carlo estimator for $\hat{S}_T$ is simply calculated by averaging the values of all the different BSM price paths plotted above at time $T = 1$. Thus, in practice, we only need the last value of the price paths to calculate this estimator (and its standard error). The $(1-\alpha)\% = (1-0.05)\% = 95\%$ CIs are calculated by finding the standard error of the values of all the different BSM price paths at time $T$ and using the approximation given by 
 
 $$
 CI_{\alpha} = \left(\hat{S}_T - z_{\alpha/2}\frac{se_{\hat{S}_T}}{\sqrt{M}}, \hat{S}_T + z_{\alpha/2}\frac{se_{\hat{S}_T}}{\sqrt{M}}\right), 
@@ -189,6 +209,7 @@ which in this case has the numerical value
 
 ```{r}
 mean.value[length(mean.value)] # Drift / "mean value".
+# This can also be calculated simply by s0*exp(mu*T1).
 ```
 
 From the results above we can clearly see that the MC estimations move closer and closer to the analytical solution when the number of paths $M$ is increased. For $M_5$ the estimation is precise to the first 3 decimals, which I would regard as a very good estimation. We also see that the CI's clearly change with the increase of $M$; the lower value of the CI's increase with $M$ and the upper value of the CI's decrease with $M$, meaning that the $95\%$ CI's become narrower when the number of paths increase. This is what we expect from the MC theory, since the estimators are unbiased and, as stated by the strong Law of Large Numbers, the sample average converges a.s. to the true expected value. 
@@ -230,7 +251,7 @@ for (i in 1:M.star){
 }
 ```
 
-```{r, eval = F}
+```{r, eval = F, echo = F}
 # Burde nok helst unngå den transponerte, heller definere matrisen omvendt.
 matplot(t(n1.paths), type = "l")
 matplot(t(n2.paths), type = "l")
@@ -286,22 +307,23 @@ BSM <- function(s0, T1, r, sigma, K){
 }
 ```
 
-We calculate the price of the given Call option (parameters are given in code block above) with the Black-Scholes-Merton formula.
+We calculate the price of a Call option with parameter set $(s_0, T, r, \sigma, K) = (24, 1.5, 0.02, 0.22, 23.5)$, using the Black-Scholes-Merton (BSM) formula.
 
 ```{r}
 (BSM.price <- BSM(s0, T1, r, sigma, K))
 ```
 
-As we can see, the price is approximately equal to `r round(BSM.price, 2)`, when rounded to 2 decimals. 
+The price is approximately equal to `r round(BSM.price, 2)`, when rounded to 2 decimals. 
 
-We implement a Monte Carlo estimator for this option price by simulating paths with the Euler-Maruyama method for given steps and paths. 
+We implement a Monte Carlo estimator for the price of this option by simulating paths with the Euler-Maruyama method for steps $n = 10, 100, 1000$ and paths $M = 10, 100, 1000, 10000, 100000$.
 
-Notice that for the path-independent options, like standard European call and put options, it is not needed to save the price path as is done below. This is done to keep the function as general as possible, in order to re-use it for the rest of the assignment. THIS COULD EASILY BE CHANGED IN THIS CASE IF TOO SLOW! (simply overwriting the previous value in the loop in every iteration).
+Notice that for the path-independent options, like standard European call and put options, it is not needed to save the price path as is done in my implementation. This is done to keep the function as general as possible, in order to re-use it for the rest of the assignment. To increase computational efficiency and lessen the use of memory one could simply iteratively overwrite one variable, instead of saving the entire price path history.
 
 ```{r}
 # Monte Carlo estimator for Euler-Maruyama. 
 # This is for a Call option still (almost general) (slide 28)
-MC <- function(M, n, r, s0, mu, h, sigma, T1, payoff.profile, set.S, ...){
+MC <- function(M, n, r, s0, mu, sigma, T1, payoff.profile, set.S, ...){
+  h <- T1/n # Calculate step size for use in Euler-Maruyama. 
   C.values <- rep(NA, length.out = M) # Initiate vector for saving payoffs per path. 
   for (i in 1:M){ # Initiate loop for M path.
     Z <- rnorm(n+1) # Generate n random variables standard normally. 
@@ -314,7 +336,7 @@ MC <- function(M, n, r, s0, mu, h, sigma, T1, payoff.profile, set.S, ...){
     # Generality is kept using a helper function set.S.
     C.values[i] <- payoff.profile(S, K) # Calculate payoff for the path and save in C.values.
   }
-  exp(-r*T1)*mean(C.values) # Return discounted average payoff. This is the MC estimator. 
+  return(list(MC = exp(-r*T1)*mean(C.values), path.values = C.values)) # Return discounted average payoff. This is the MC estimator. We also return the C.values, which will be used to calculate the CIs in problem C. 
 }
 ```
 
@@ -327,10 +349,11 @@ Call.profile <- function(S, K){
 # Feed the function into the MC estimator in order to calculate estimate for Call option. 
 Call.set.S <- function(S.values){
   S.values[length(S.values)] # The Call option uses the last value in the list. 
+  # This is standard for European Call option. 
 }
 ```
 
-Assuming that $\mu = r$. 
+Assuming that $\mu = r$, we use the MC estimator to calculate the price of the option. 
 
 ```{r}
 M.list <- c(10, 100, 1000, 10000, 100000)
@@ -341,8 +364,8 @@ combinations <- matrix(rep(NA, length.out = length(M.list)*length(n.list)), nrow
 for (i in 1:length(M.list)){
   for (j in 1:length(n.list)){
     h <- T1/n.list[j]
-    combinations[i, j] <- MC(M = M.list[i], n = n.list[j], r = r, s0 = s0, mu = r, h = h, 
-                             sigma = sigma, T1 = T1, payoff.profile = Call.profile, set.S = Call.set.S, K = K)
+    combinations[i, j] <- MC(M = M.list[i], n = n.list[j], r = r, s0 = s0, mu = r, 
+                  sigma = sigma, T1 = T1, payoff.profile = Call.profile, set.S = Call.set.S, K = K)$MC
   }
 }
 ```
@@ -350,7 +373,7 @@ for (i in 1:length(M.list)){
 
 ```{r}
 # Calculations of relative error and absolute error.
-rel.errors <- (BSM.price - combinations)/BSM.price
+rel.errors <- abs(BSM.price - combinations)/BSM.price
 abs.errors <- abs(BSM.price - combinations)
 ```
 
@@ -368,53 +391,25 @@ knitr::kable(df.rel, caption = "Relative Errors")
 knitr::kable(df.abs, caption = "Absolute Errors")
 ```
 
-Interpretation of results in view of $n$ and $M$.
+How can these results be interpreted in view of $n$ and $M$?
 
-TESTER MED EKSEMPLER I SLIDES!
+First of all, we can clearly see that, in the majority of cases, the absolute values of the errors decreases when the number of paths $M$ increases. This is coherent with what we expect, as noted earlier, based on the MC estimator. The best value obtained for the relative error is $\approx -0.0019$, meaning that we are able to get within $0.2\%$ of the closed form solution, which is very accurate. 
 
-```{r, eval = F}
-# slide 21 Section 3
-mu <- 0.05
-sigma <- 0.2
-s0 <- 10
-T1 <- 1
-n <- 5
-h <- 1/n
+Secondly, we notice that it is the change in $M$ that leads to dramatic changes (often of an order of magnitude) in the errors, as already noted in Problem A, where a change in $n$ does not lead to the same dramatic changes BE SURE THAT THIS MAKES SENSE!
 
-Z <- rnorm(n)
-Z <- c(0.5377, 1.8339, -2.2588, 0.8622, 0.3188)
-S.values <- rep(NA, length.out = n+1)
-S.values[1] <- s0
-for (j in 2:(n+1)){
-  S.values[j] <- S.values[j-1] + mu*S.values[j-1]*h + sigma*S.values[j-1]*sqrt(h)*Z[j-1]
-}
-S.values
-S.values[length(S.values)]
-# Correct!
-# This means that the inner loop with the Euler Method is correctly implemented at least!
-```
+Additionally, we notice that the lowest errors tend to be found in the lower right corner of the tables, which is as expected, since this is the area of the table with the finest discretized grids (large $n$) and more paths (large $M$).
 
-```{r, eval = F}
-MC <- function(M, n, r, s0, mu, h, sigma, T1, payoff.profile, set.S, ...){
-  C.values <- rep(NA, length.out = M)
-  for (i in 1:M){
-    Z <- rnorm(n)
-    S.values <- rep(NA, length.out = n+1)
-    S.values[1] <- s0
-    for (j in 2:(n+1)){
-      S.values[j] <- S.values[j-1] + mu*S.values[j-1]*h + sigma*S.values[j-1]*sqrt(h)*Z[j-1]
-    }
-    S <- set.S(S.values) # Generality is kept using a helper function set.S.
-    C.values[i] <- payoff.profile(S, K)
-  }
-  exp(-r*T1)*mean(C.values) # Return discounted average payoff
-}
-```
+WHAT ELSE CAN I COMMENT ON HERE?!
 
+Moreover, notice that all values are smaller in Table 3 (relative errors) compared to their respective value in Table 4 (absolute errors), since the relative errors are calculated in almost the same way as the absolute errors, where the only difference is not taking absolute values and dividing by the BSM price ($\approx 3.15$). Notice that if the absolute value is added in the calculation of the relative errors, the values are all the same, with the five negative signs disappearing. 
+
+I cannot find a clear pattern in the negative signs that appear in the relative errors, which means that it is not clear that some combinations of $n$ and $M$ overestimate the BSM price. 
+
+The results that are yielded for values of $M$ smaller than 1000 are useless, since they are very bad estimations far from the BSM price. When setting $M = 1000$ we are getting into the 5% domain of relative errors, which is further improved when $M$ is further increased. Thus, we see that we need a (relatively) substantial amount of paths in order for the MC estimator to gain useful estimations - it is not enough with 10 or 100 paths. 
 
 # Problem C - Option Pricing II
 
-A Monte Carlo estimator is implemented for a specific Asian Call Option. This Asian Call Option averages prices every Friday. We set $n = 252$ and assume that $n = 1$ is Monday. This means that we average the prices $t_5, t_{10}, t_{15}, \ldots$. The paypff profile for this option is thus $(\bar{S}-K)^+$, where $\bar{S}$ is the arithmetic average over all the prices $t_i, \hspace{0.2em} i \in \{5, 10, 15, \ldots\}$. We set $M = 10000$ and use the parameter set $(s_0, T, r, \sigma, K) = (20, 1, 0.02, 0.24, 20)$.
+A Monte Carlo estimator is implemented for an Asian Call Option. This Asian Call Option averages prices every Friday. We set $n = 252$ and assume that $n = 1$ is Monday. This means that we average the prices $t_5, t_{10}, t_{15}, \ldots$. The payoff profile for this option is thus $(\bar{S}-K)^+$, where $\bar{S}$ is the arithmetic average over all the prices $t_i, \hspace{0.2em} i \in \{5, 10, 15, \ldots\}$. We set $M = 10000$ and use the parameter set $(s_0, T, r, \sigma, K) = (20, 1, 0.02, 0.24, 20)$.
 
 ```{r}
 set.seed(061999)
@@ -424,8 +419,9 @@ r <- 0.02
 sigma <- 0.24
 K <- 20
 n <- 252
+M <- 10000
 
-# This function can be fed into the MC estimator instead. 
+# This function is fed into the MC estimator instead. 
 Asian.set.S <- function(S.values){ 
   # We extract every 5th value and calculate their arithmetic mean.
   mean(S.values[seq(5, length(S.values), 5)])
@@ -438,11 +434,11 @@ Asian.profile <- function(S, K){
 }
 
 # Still assuming that mu = r.
-Asian.price <- MC(M = 10000, n = 252, r = 0.02, s0 = 20, mu = 0.02, h = 1/252, 
-   sigma = 0.24, T1 = 1, Asian.profile, Asian.set.S, K = 20)
+(Asian.price <- MC(M = M, n = n, r = r, s0 = s0, mu = r, 
+   sigma = sigma, T1 = T1, Asian.profile, Asian.set.S, K = K)$MC)
 ```
 
-As we can see from the result above, the price estimated via the MC estimator is `r round(Asian.price, 2)`. THIS PRICE CAN PERHAPS BE CHECKED WITH A CALCULATOR ONLINE!
+As we can see from the result above, the price estimated via the MC estimator is `r round(Asian.price, 4)`. THIS PRICE CAN PERHAPS BE CHECKED WITH A CALCULATOR ONLINE!
 
 A Monte Carlo estimator is implemented for a Lookback option with payoff profile $(S_{max}-K)^+$, where $S_{max}$ refers to the maximum price during the time to maturity of the option. We use the parameter set $(s_0, T, r, \sigma, K) = (22, 2, 0.02, 0.29, 20)$ THIS K IS NOT SPECIFIED IN THE PROBLEM DESCRIPTION, BUT I WILL JUST LEAVE IT HERE NOW!
 
@@ -452,7 +448,7 @@ s0 <- 22
 T1 <- 2
 r <- 0.02
 sigma <- 0.29
-K <- 20
+K <- 0
 n <- 1000
 M1 <- 1000
 M2 <- 10000
@@ -471,14 +467,58 @@ lookback.profile <- function(S, K){
 }
 
 # Still assuming that mu = r.
-lookback.price <- MC(M = M2, n = n, r = s0, s0 = s0, mu = r, h = 1/M2, 
-   sigma = sigma, T1 = T1, lookback.profile, lookback.set.S, K = 20)
+(lookback.price <- MC(M = M2, n = n, r = s0, s0 = s0, mu = r, 
+   sigma = sigma, T1 = T1, lookback.profile, lookback.set.S, K = K)$MC)
 ```
 
-As we can see from the result above, the price estimated via the MC estimator is `r round(lookback.price, 2)`. THIS PRICE CAN PERHAPS BE CHECKED WITH A CALCULATOR ONLINE!
+As we can see from the result above, the price estimated via the MC estimator is `r round(lookback.price, 4)`. THIS PRICE CAN PERHAPS BE CHECKED WITH A CALCULATOR ONLINE!
+
+We calculate confidence intervals of this option price for $M_1 = 1000$, $M_2 = 10000$ and $M_3 = 100000$ paths. 
 
 ```{r}
 # We calculate CIs of this option price for the different values of M.
 
+M1.results <- MC(M = M1, n = n, r = s0, s0 = s0, mu = r, 
+   sigma = sigma, T1 = T1, lookback.profile, lookback.set.S, K = K)
+M1.path.values <- M1.results$path.values 
+M1.MC <- M1.results$MC
+
+M2.results <- MC(M = M2, n = n, r = s0, s0 = s0, mu = r, 
+   sigma = sigma, T1 = T1, lookback.profile, lookback.set.S, K = K)
+M2.path.values <- M2.results$path.values 
+M2.MC <- M1.results$MC
+
+M3.results <- MC(M = M3, n = n, r = s0, s0 = s0, mu = r, 
+   sigma = sigma, T1 = T1, lookback.profile, lookback.set.S, K = K)
+M3.path.values <- M3.results$path.values 
+M3.MC <- M3.results$MC
 ```
+
+```{r, eval = F}
+# Now we can calculate the CI's. 
+
+# Will take inspiration from what I did earlier!¨
+M1.hat <- hat_ST(M1.paths, n) 
+CI1 <- CI_ST(M1.paths, n)
+M2.hat <- hat_ST(M2.paths, n) 
+CI2 <- CI_ST(M2.paths, n)
+M3.hat <- hat_ST(M3.paths, n) 
+CI3 <- CI_ST(M3.paths, n)
+M4.hat <- hat_ST(M4.paths, n) 
+CI4 <- CI_ST(M4.paths, n)
+M5.hat <- hat_ST(M5.paths, n) 
+CI5 <- CI_ST(M5.paths, n)
+
+col1 <- rbind(M1.hat, CI1$l, CI1$u)
+col2 <- rbind(M2.hat, CI2$l, CI2$u)
+col3 <- rbind(M3.hat, CI3$l, CI3$u)
+col4 <- rbind(M4.hat, CI4$l, CI4$u)
+col5 <- rbind(M5.hat, CI5$l, CI5$u)
+
+hats <- cbind(col1, col2, col3, col4, col5)
+colnames(hats) <- c("M1 = 10", "M2 = 100", "M3 = 1000", "M4 = 10000", "M5 = 100000") 
+rownames(hats) <- c("Est.", "Lower CI", "Upper CI")
+knitr::kable(hats, caption = "Monte Carlo Estimation for S_T, varying M")
+```
+
 
