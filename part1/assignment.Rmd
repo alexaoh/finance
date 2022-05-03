@@ -5,7 +5,7 @@ author: "Alexander J Ohrt"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
   html_document:
-    code_folding: hide
+    code_folding: show
     toc: true
     toc_depth: 3
     theme: readable
@@ -25,7 +25,7 @@ linkcolor: black
 
 ```{r setup, include=FALSE}
 rm(list = ls())
-knitr::opts_chunk$set(echo = T, warning = F, fig.width = 10, comment = "#>", size = "scriptsize")
+knitr::opts_chunk$set(echo = F, warning = F, fig.width = 10, comment = "#>", size = "scriptsize")
 setwd("/home/ajo/gitRepos/finance/part1")
 library(ggplot2)
 library(tidyverse)
@@ -34,7 +34,7 @@ library(reshape2)
 
 # Problem A - Euler-Maruyama Method
 
-First we implement a discretization for the Black-Scholes-Merton price dynamics with the given parameter set, with $n = 250$ steps. We generate $M_1 = 10$, $M_2 = 100$, $M_3 = 1000$, $M_4 = 10000$ and $M_5 = 100000$ paths and plot the paths in separate figures. 
+First we implement a discretization for the Black-Scholes-Merton (BSM) price dynamics with the given parameter set, with $n = 250$ steps. We generate $M_1 = 10$, $M_2 = 100$, $M_3 = 1000$, $M_4 = 10000$ and $M_5 = 100000$ paths. The paths are plotted in separate figures for the three first cases. 
 
 ```{r}
 set.seed(061999)
@@ -52,15 +52,29 @@ M4 <- 10000
 M5 <- 100000
 ```
 
-SKJØNNER IKKE HELT HVORFOR DETTE EGENTLIG GJØRES!? MÅ TENKE LITT MER PÅ HVORFOR CUMSUM BRUKES, MEN JEG SKJØNNER AT DET JEG GJORDE FØRST BLIR FEIL, FOR DA AVHENGER DET AV DISKRETISERINGEN!
+The price dynamics are implemented using the function shown below, which is used to calculate each path. Notice that, since the Wiener process has the distribution $W_t \sim N(0,t), \forall t \in (0, t]$, we can think of such a process as a cumulative summation of normally distributed random variables. Thus, on our uniform discrete grid 
 
-```{r}
+$$
+0 = t_0 < \ldots < t_n = T,
+$$ 
+we can simulate the following relation 
+
+$$
+X(t_0) = 0, \hspace{0.3em} X(t_1) \sim N(0,t_1) = N(0, t_0+h), \ldots, \hspace{0.3em} X(t_n) \sim N(t_0 + nh) = X(t_1) + \ldots + X(t_{n-1}), 
+$$
+where $X$ represents the Brownian motion, $n$ is the number of steps in the discretization and $h = \frac{T}{n}$ is the step size. 
+
+VIL HAN HA EULER-MARUYAMA HER OG IKKE DENNE FORMELEN? DET ER ENKELT Å BYTTE UT, MEN MÅ SPØRRE (FOR EM ER IMPLEMENTERT LENGER NEDE UANSETT!)
+
+```{r, echo = T}
 # Price path stochastic process. 
 price.path <- function(s0, t, mu, sigma){
-  Wt <- rnorm(n = length(t)) # Draw length(t) standard normally distributed variables. 
-  W2 <- cumsum(Wt)*sqrt(t[2]-t[1]) # Step size is constant, grid is uniform. We calculate the cumulative sum of the standard normal draw to simulate the Wiener process, which is N(0,t) at time t, i.e. the variance increases when the process is run further and further away from t = 0. Notice that we also multiply by the (uniform) stepsize used on the (uniform) grid, in order to transform the N(0,1) values to N(0,t). 
+  Wt <- rnorm(n = length(t), sd = sqrt(t[2]-t[1])) # Draw length(t) normally distributed variables with mean 0 and standard deviation h. 
+  W2 <- cumsum(Wt) # Step size is constant, grid is uniform. We calculate the cumulative sum of the standard normal draw to simulate the Wiener process, which is N(0,t) at time t, i.e. the variance increases when the process is run further and further away from t = 0. Notice that we also multiply by the (uniform) stepsize used on the (uniform) grid, in order to transform the N(0,1) values to N(0,t). 
   s0*exp(mu*t)*exp(sigma*W2-sigma^2/2*t)
 }
+
+# VIL HAN EGENTLIG HA EULER-MARUYAMA HER TIL Å LAGE HVER PATH I STEDET!? ELLER ER DETTE OK? 
 ```
 
 ```{r}
@@ -91,69 +105,30 @@ for (i in 1:M5){
 }
 ```
 
-
 ```{r}
-#plot(NULL, NULL, main = paste0(M1," paths"), xlim = c(0,1), ylim = c(0, 50), ylab = "S", xlab = "t")
+mean.value <- s0*exp(mu*t)
+matplot(t(M1.paths), type = "l", main = paste0(M1," paths"), xlab = "t in years", ylab = "S", xaxt = "n", ylim = c(8, 20))
+lines(mean.value) # Drift / "mean value".
+axis(1, at=seq(0,n, by = 10), labels = seq(0,1,length.out = n/10+1))
 
-#lines(M1.paths, col = 1:M1)
-# df1 <- data.frame(M1.paths)
-# df2 <- melt(df1)
-# df2$rowid <- 1:M1
-# df2 %>% ggplot(aes(variable, value, group=factor(rowid))) + 
-#   geom_line(aes(color=factor(rowid)))
+matplot(t(M2.paths), type = "l", main = paste0(M2," paths"), xlab = "t in years", ylab = "S", xaxt = "n", ylim = c(8, 20))
+#lines(apply(M2.paths, 2, mean), cex = 2)
+lines(mean.value) # Drift / "mean value".
+axis(1, at=seq(0,n, by = 10), labels = seq(0,1,length.out = n/10+1))
 
-# plot(df1[1,])
-
-# Ser ikke noe bedre ut når plottingen er gjort med ggplot. 
-#plot(t, M1.paths[1,], type = "l")
-
-# Burde lage denne plotting bedre med ggplot senere kanskje!
-# Endre til tid på x-aksen også kanskje!
-matplot(t(M1.paths), type = "l", main = paste0(M1," paths"), xlab = "Discretization Points", ylab = "S")
-lines(s0*exp(mu*t)) # Drift / "mean value".
+matplot(t(M3.paths), type = "l", main = paste0(M3," paths"), xlab = "t in years", ylab = "S", xaxt = "n", ylim = c(8, 20))
+lines(mean.value) # Drift / "mean value".
+axis(1, at=seq(0,n, by = 10), labels = seq(0,1,length.out = n/10+1))
 ```
 
-```{r}
-# Burde lage denne plotting bedre med ggplot senere kanskje!
-# Endre til tid på x-aksen også kanskje!
-#M2.p <- tibble(M2.paths)
-matplot(t(M2.paths), type = "l", main = paste0(M2," paths"), xlab = "Discretization Points", ylab = "S")
-lines(apply(M2.paths, 2, mean), cex = 2)
-lines(s0*exp(mu*t))
+The Monte Carlo estimator for $\hat{S}_T$ is calculated separately for each of the values of $M_i, \hspace{0.5em} i \in \{1,2,3,4,5\}$. The 95\% confidence interval (CI) is provided for each estimator. A comparison between these estimators and the analytical solution of $\mathbb{E}(S_T)$ is done and differences are explained. 
 
-matplot(t(M3.paths), type = "l", main = paste0(M3," paths"), xlab = "Discretization Points", ylab = "S")
-```
+The Monte Carlo estimator for $\hat{S}_T$ is simply calculated by averaging the values of all the different BSM price paths plotted above at time $T = 1$. The $(1-\alpha)\% = (1-0.05)\% = 95\%$ CIs are calculated by finding the standard error of the values of all the different BSM price paths at time $T$ and using the approximation given by 
 
-TESTING CODE BELOW COMPARING TO SLIDE 33. SER BEDRE UT NÅ, MEN SKJØNNER IKKE HELT HVORFOR?
-
-```{r}
-n2 <- 200 # points
-M <- 10 # paths
-Mtest.paths <- matrix(rep(NA, length.out = M*(n2+1)), nrow = M)
-t <- seq(0, 5, length.out = n2+1)
-s0 <- 10
-for (i in 1:M){
-  Mtest.paths[i,] <- price.path(s0 = s0, t = t, 
-                                mu = 0.05, sigma = 0.05) 
-}
-#lines(M1.paths, col = 1:M1) 
-#df2 <- tibble(M2.paths)
-#df1 %>% ggplot()
-
-m <- apply(Mtest.paths, 2, mean)
-
-# Burde lage denne plotting bedre med ggplot senere kanskje!
-# Endre til tid på x-aksen også kanskje!
-matplot(t(Mtest.paths), type = "l", main = paste0(M," paths"), xlab = "Discretization Points", ylab = "S", ylim = c(0,20))
-lines(m)
-lines(s0*exp(0.05*t))
-```
-
-DETTE SER MYE BEDRE UT!!
-
-TESTING: Prøvde å få denne til å ligne på plot på slide 33 i Section 2.2, og det ser bedre ut nå.
-
-The Monte Carlo estimator for $\hat{S}_T$ is calculated separately for each of the values of $M_i$. The 5\% confidence interval is provided for each estimator. A comparison between these estimators and the analytical solution of $\mathbb{E}(S_T)$ is done and differences are explained. 
+$$
+CI_{\alpha} = \left(\hat{S}_T - z_{\alpha/2}\frac{se_{\hat{S}_T}}{\sqrt{M}}, \hat{S}_T + z_{\alpha/2}\frac{se_{\hat{S}_T}}{\sqrt{M}}\right), 
+$$
+where $se_{\hat{S}_T}$ is the aforementioned standard error,  $z_{\alpha/2}$ is the $1-\alpha$ quantile of the standard normal distribution and $M$ is the number of price paths simulated. This is an asymptotically valid $1-\alpha$ CI, which means it becomes closer to the exact analytic value when $M$ is increased. 
 
 ```{r}
 # Calculate the Monte-Carlo estimator of $\hat{S}_T$ for each of the values of $M_i$.
@@ -194,16 +169,31 @@ rownames(hats) <- c("Est.", "Lower CI", "Upper CI")
 knitr::kable(hats, caption = "Monte Carlo Estimation for S_T, varying M")
 ```
 
-Now, what is the analytical solution for $\mathbb{E}(S_T)$? The analytical solution is 
+Now, what is the analytical solution for $\mathbb{E}(S_T)$? We know that the process of the risky asset in $t \in [0,T]$ is distributed as 
+
+$$
+S_t \sim \mathcal{L}N(\mu^{*}, \sigma^{*2}), 
+$$
+
+where $\mathbb{E}(S_T) = \mu^{*}$. In addition, we know that, when $W_t \sim N(0,t)$, it follows that 
+
+$$
+X_t \sim N(\ln S_0 - \left(\frac{\sigma^2}{2} - \mu\right)t, \sigma^2t) = N(\mu_{X_t}, \sigma^2_{X_t}), 
+$$
+where $S_t = e^{X_t}$. Finally, we know that the expected value of the log-normally distributed variable $S_t$ is $\exp{\left(\mu_{X_t} + \frac{\sigma^2_{X_t}}{2}\right)}$. This means that the analytical solution for $\mathbb{E}(S_T)$ is 
+
+$$
+\mu^* = \exp{\left(\mu_{X_t} + \frac{\sigma^2_{X_t}}{2}\right)} = \exp{\left(\ln S_0 -\left(\frac{\sigma^2}{2} - \mu\right)t + \frac{\sigma^2t}{2}\right)} = S_0 e^{\mu t},
+$$
+which in this case has the numerical value
 
 ```{r}
-# I think this is the analytical solution, but I am not certain!?
-s0*exp(mu+sigma^2/2)
+mean.value[length(mean.value)] # Drift / "mean value".
 ```
 
-Explain the differences and now and why the confidence intervals differ.
+From the results above we can clearly see that the MC estimations move closer and closer to the analytical solution when the number of paths $M$ is increased. For $M_5$ the estimation is precise to the first 3 decimals, which I would regard as a very good estimation. We also see that the CI's clearly change with the increase of $M$; the lower value of the CI's increase with $M$ and the upper value of the CI's decrease with $M$, meaning that the $95\%$ CI's become narrower when the number of paths increase. This is what we expect from the MC theory, since the estimators are unbiased and, as stated by the strong Law of Large Numbers, the sample average converges a.s. to the true expected value. 
 
-Now we fix the number of paths $M^* = 1000$ and vary the values of n, i.e. the number of steps, while repeating the discussion done above. 
+Now we fix the number of paths $M^* = 1000$ and vary the values of $n$, i.e. the number of steps, while repeating the discussion done above. 
 
 ```{r}
 M.star <- 1000
@@ -269,7 +259,10 @@ rownames(hats) <- c("Est.", "Lower CI", "Upper CI")
 knitr::kable(hats, caption = "Monte Carlo Estimation for S_T, varying n")
 ```
 
-Yes, the results differ (again). Discuss why!!
+
+We can make several similar observations in this case; 
+
+Notice however that is is the number of paths $M$, and not the number of discretization points $n$, that yields dramatic differences when the value is increased. In other words, the estimates move closer to the true value when $n$ is increased while $M$ is fixed, but the changes seem to be more dramatic when $n$ is fixed and $M$ is increased. It is however important to notice that, in our experiment, $n$ is only changed across three orders of magnitude, while $M$ is changed across five orders of magnitude, which might lead to a somewhat biased observation or discussion. 
 
 # Problem B - Option Pricing I
 
