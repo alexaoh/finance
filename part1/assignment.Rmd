@@ -4,13 +4,13 @@ subtitle: "Option Pricing and Risk - Financial Statistics"
 author: "Alexander J Ohrt"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
-  html_document:
-    code_folding: show
-    toc: true
-    toc_depth: 3
-    theme: readable
-    highlight: textmate
-    number_sections: true
+  # html_document:
+  #   code_folding: show
+  #   toc: true
+  #   toc_depth: 3
+  #   theme: readable
+  #   highlight: textmate
+  #   number_sections: true
   pdf_document:
     fig_caption: true
     number_sections: false
@@ -336,7 +336,8 @@ MC <- function(M, n, r, s0, mu, sigma, T1, payoff.profile, set.S, ...){
     # Generality is kept using a helper function set.S.
     C.values[i] <- payoff.profile(S, K) # Calculate payoff for the path and save in C.values.
   }
-  return(list(MC = exp(-r*T1)*mean(C.values), path.values = C.values)) # Return discounted average payoff. This is the MC estimator. We also return the C.values, which will be used to calculate the CIs in problem C. 
+  return(list(MC = exp(-r*T1)*mean(C.values), path.values = exp(-r*T1)*C.values)) # Return discounted average payoff. 
+  # This is the MC estimator. We also return the discounted C.values, which will be used to calculate the CIs in problem C. 
 }
 ```
 
@@ -438,9 +439,9 @@ Asian.profile <- function(S, K){
    sigma = sigma, T1 = T1, Asian.profile, Asian.set.S, K = K)$MC)
 ```
 
-As we can see from the result above, the price estimated via the MC estimator is `r round(Asian.price, 4)`. THIS PRICE CAN PERHAPS BE CHECKED WITH A CALCULATOR ONLINE!
+As we can see from the result above, the price estimated via the MC estimator is `r round(Asian.price, 4)`. 
 
-A Monte Carlo estimator is implemented for a Lookback option with payoff profile $(S_{max}-K)^+$, where $S_{max}$ refers to the maximum price during the time to maturity of the option. We use the parameter set $(s_0, T, r, \sigma, K) = (22, 2, 0.02, 0.29, 20)$ THIS K IS NOT SPECIFIED IN THE PROBLEM DESCRIPTION, BUT I WILL JUST LEAVE IT HERE NOW!
+A Monte Carlo estimator is implemented for a Lookback option with payoff profile $(S_{max}-K)^+$, where $S_{max}$ refers to the maximum price during the time to maturity of the option. We use the parameter set $(s_0, T, r, \sigma, K) = (22, 2, 0.02, 0.29, 21)$. 
 
 ```{r}
 set.seed(061999)
@@ -448,7 +449,7 @@ s0 <- 22
 T1 <- 2
 r <- 0.02
 sigma <- 0.29
-K <- 0
+K <- 21
 n <- 1000
 M1 <- 1000
 M2 <- 10000
@@ -466,59 +467,51 @@ lookback.profile <- function(S, K){
   max(0, S-K)
 }
 
-# Still assuming that mu = r.
-(lookback.price <- MC(M = M2, n = n, r = s0, s0 = s0, mu = r, 
-   sigma = sigma, T1 = T1, lookback.profile, lookback.set.S, K = K)$MC)
+# We still assume that mu = r.
 ```
 
-As we can see from the result above, the price estimated via the MC estimator is `r round(lookback.price, 4)`. THIS PRICE CAN PERHAPS BE CHECKED WITH A CALCULATOR ONLINE!
-
-We calculate confidence intervals of this option price for $M_1 = 1000$, $M_2 = 10000$ and $M_3 = 100000$ paths. 
+We calculate estimations and 95% confidence intervals of this option price for $M_1 = 1000$, $M_2 = 10000$ and $M_3 = 100000$ paths. 
 
 ```{r}
 # We calculate CIs of this option price for the different values of M.
-
-M1.results <- MC(M = M1, n = n, r = s0, s0 = s0, mu = r, 
+M1.results <- MC(M = M1, n = n, r = r, s0 = s0, mu = r, 
    sigma = sigma, T1 = T1, lookback.profile, lookback.set.S, K = K)
 M1.path.values <- M1.results$path.values 
 M1.MC <- M1.results$MC
 
-M2.results <- MC(M = M2, n = n, r = s0, s0 = s0, mu = r, 
+M2.results <- MC(M = M2, n = n, r = r, s0 = s0, mu = r, 
    sigma = sigma, T1 = T1, lookback.profile, lookback.set.S, K = K)
 M2.path.values <- M2.results$path.values 
-M2.MC <- M1.results$MC
+M2.MC <- M2.results$MC
 
-M3.results <- MC(M = M3, n = n, r = s0, s0 = s0, mu = r, 
+M3.results <- MC(M = M3, n = n, r = r, s0 = s0, mu = r, 
    sigma = sigma, T1 = T1, lookback.profile, lookback.set.S, K = K)
 M3.path.values <- M3.results$path.values 
 M3.MC <- M3.results$MC
 ```
 
-```{r, eval = F}
-# Now we can calculate the CI's. 
+```{r}
+# Now we can calculate the 95% CI's. This is done using the same formula as explained earlier. 
+lookback.CI <- function(M.path.values, M.MC){
+  z.alpha <- qnorm(0.975)
+  M <- length(M.path.values)
+  sd1 <- sd(M.path.values)
+  ste <- z.alpha*sd1/sqrt(M)
+  list(l = M.MC - ste, u = M.MC + ste)
+}
 
-# Will take inspiration from what I did earlier!¨
-M1.hat <- hat_ST(M1.paths, n) 
-CI1 <- CI_ST(M1.paths, n)
-M2.hat <- hat_ST(M2.paths, n) 
-CI2 <- CI_ST(M2.paths, n)
-M3.hat <- hat_ST(M3.paths, n) 
-CI3 <- CI_ST(M3.paths, n)
-M4.hat <- hat_ST(M4.paths, n) 
-CI4 <- CI_ST(M4.paths, n)
-M5.hat <- hat_ST(M5.paths, n) 
-CI5 <- CI_ST(M5.paths, n)
+CI1 <- lookback.CI(M1.path.values, M1.MC)
+CI2 <- lookback.CI(M2.path.values, M2.MC)
+CI3 <- lookback.CI(M3.path.values, M3.MC)
 
-col1 <- rbind(M1.hat, CI1$l, CI1$u)
-col2 <- rbind(M2.hat, CI2$l, CI2$u)
-col3 <- rbind(M3.hat, CI3$l, CI3$u)
-col4 <- rbind(M4.hat, CI4$l, CI4$u)
-col5 <- rbind(M5.hat, CI5$l, CI5$u)
+col1 <- rbind(M1.MC, CI1$l, CI1$u)
+col2 <- rbind(M2.MC, CI2$l, CI2$u)
+col3 <- rbind(M3.MC, CI3$l, CI3$u)
 
-hats <- cbind(col1, col2, col3, col4, col5)
-colnames(hats) <- c("M1 = 10", "M2 = 100", "M3 = 1000", "M4 = 10000", "M5 = 100000") 
+hats <- cbind(col1, col2, col3)
+colnames(hats) <- c("M1 = 1000", "M2 = 10000", "M3 = 100000") 
 rownames(hats) <- c("Est.", "Lower CI", "Upper CI")
-knitr::kable(hats, caption = "Monte Carlo Estimation for S_T, varying M")
+knitr::kable(hats, caption = "Monte Carlo Estimation for Lookback Option, Varying M")
 ```
 
-
+Similar observations as in earlier problems can be made concerning how these CI's change with increasing $M$; they become narrower with increasing number of paths, which is the behavior we expect. 
