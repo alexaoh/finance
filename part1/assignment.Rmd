@@ -55,7 +55,7 @@ M4 <- 10000
 M5 <- 100000
 ```
 
-The price dynamics are implemented using the function shown below, which is used to calculate each path. Notice that, since the Wiener process has the distribution $W_t \sim N(0,t), \forall t \in (0, t]$, we can think of such a process as a cumulative summation of normally distributed random variables. Thus, on our uniform discrete grid 
+The price dynamics are implemented with two different methods for calculating each path. The R function appended has the parameter `version`, which is used to select which version one wants to use to calculate each price path; `onestep` or `EM`. The first method implemented is the one step solution. Since the Wiener process has the distribution $W_t \sim N(0,t), \forall t \in (0, t]$, we can think of such a process as a cumulative summation of normally distributed random variables. Thus, on our uniform discrete grid 
 
 $$
 0 = t_0 < \ldots < t_n = T,
@@ -65,63 +65,84 @@ we can simulate the following relation
 $$
 X(t_0) = 0, \hspace{0.3em} X(t_1) \sim N(0,t_1) = N(0, t_0+h), \ldots, \hspace{0.3em} X(t_n) \sim N(t_0 + nh) = X(t_1) + \ldots + X(t_{n-1}), 
 $$
-where $X$ represents the Brownian motion, $n$ is the number of steps in the discretization and $h = \frac{T}{n}$ is the step size. 
+where $X$ represents the Brownian motion, $n$ is the number of steps in the discretization and $h = \frac{T}{n}$ is the step size. We insert this, replacing $W_t$, into the solution of the SDE
 
-VIL HAN HA EULER-MARUYAMA HER OG IKKE DENNE FORMELEN? DET ER ENKELT Å BYTTE UT, MEN MÅ SPØRRE (FOR EM ER IMPLEMENTERT LENGER NEDE UANSETT!)
+$$
+\mathrm{d}S_t = \mu S_t \mathrm{d}t + \sigma S_t\mathrm{d}W_t,
+$$
+which is 
 
-```{r, echo = T}
+$$
+S_t = S_0 e^{\mu t}e^{\sigma W_t-\frac{\sigma^2}{2}t},
+$$
+which makes it possible to calculate the one step solution on the grid. The second method implemented is the Euler-Maruyama (EM) scheme
+
+$$
+  \hat{S}_{t_{j+1}} = \hat{S}_{t_{j}} + \mu h\hat{S}_{t_{j}} + \sigma \sqrt{h} Z_{t_j} \hat{S}_{t_{j}}, 
+$$
+where $Z_{t_j}$ are standard normally distributed variables. 
+
+Notice that the two implementations give slightly different price paths and slightly different estimations. Keep in mind that the results from the `onestep` method are the ones shown and discussed during the remainder of the problem, even though the results using the `EM` method are highly comparable. 
+
+```{r, echo = F}
 # Price path stochastic process. 
-price.path <- function(s0, t, mu, sigma){
-  #Wt <- rnorm(n = length(t), sd = sqrt(t[2]-t[1])) # Draw length(t) normally distributed 
-  #variables with mean 0 and standard deviation h. 
-  #W2 <- cumsum(Wt) # Step size is constant, grid is uniform. We calculate the cumulative 
-  #sum of the standard normal draw to simulate the Wiener process, which is N(0,t) at 
-  #time t, i.e. the variance increases when the process is run further and further away 
-  #from t = 0. Notice that we also multiply by the (uniform) stepsize used on the 
-  #(uniform) grid, in order to transform the N(0,1) values to N(0,t). 
-  #s0*exp(mu*t)*exp(sigma*W2-sigma^2/2*t)
-  
-  # Byttet ut her i tilfelle det var det han ville!
-  # t-aksen trengs ikke i dette tilfellet da! Bedre å bare bruke n!
-  n <- length(t)-1
-  Z <- rnorm(n)
-  S.values <- rep(NA, length.out = n+1)
-  S.values[1] <- s0
-  h <- t[2]-t[1]
-  for (j in 2:(n+1)){
-    S.values[j] <- S.values[j-1] + mu*S.values[j-1]*h + sigma*S.values[j-1]*sqrt(h)*Z[j-1]
+price.path <- function(s0, t, mu, sigma, version = "onestep"){
+  if (version == "onestep"){
+    Wt <- rnorm(n = length(t), sd = sqrt(t[2]-t[1])) # Draw length(t) normally distributed 
+    #variables with mean 0 and variance h. 
+    W2 <- cumsum(Wt) # Step size is constant, grid is uniform. We calculate the cumulative 
+    #sum of the standard normal draw to simulate the Wiener process, which is N(0,t) at 
+    #time t, i.e. the variance increases when the process is run further and further away 
+    #from t = 0. 
+    return(s0*exp(mu*t)*exp(sigma*W2-sigma^2/2*t)) # Return the one step solution to the SDE. 
+  } else if (version == "EM") {
+    n <- length(t)-1 # t is not strictly needed for this version,
+    #but we simply extract n from t to make the function parameters as simple as possible. 
+    #We subtract 1 because length of t is n+1. 
+    Z <- rnorm(n) # Draw normally distributed variables. 
+    S.values <- rep(NA, length.out = n+1) # Define vector for saving entire price path. 
+    S.values[1] <- s0 # First value in price path is s0. 
+    h <- t[2]-t[1] # Step length. 
+    for (j in 2:(n+1)){ # Loop for EM scheme. 
+      S.values[j] <- S.values[j-1] + mu*S.values[j-1]*h + sigma*S.values[j-1]*sqrt(h)*Z[j-1]
+    }
+    return(S.values) # Return the entire price path. 
+  } else{
+    stop("Please input a valid version name, either `EM` or `onestep`.")
   }
-  S.values
 }
-
-# VIL HAN EGENTLIG HA EULER-MARUYAMA HER TIL Å LAGE HVER PATH I STEDET!? ELLER ER DETTE OK? 
+# Improvement: Could implement antithetic sampling in order to reduce the variance of the MC estimator. 
+# This can be improved in the entire assignment. 
 ```
 
 ```{r}
 # Generate the price paths for all the given number of paths. 
+version <- "onestep" # Choose the version of the function we want to use. 
+
+# For each of the M_i number of paths, we calculate M_i paths using the price.path function. 
 M1.paths <- matrix(rep(NA, length.out = M1*(n+1)), nrow = M1)
 for (i in 1:M1){
-  M1.paths[i,] <- price.path(s0 = s0, t = t, mu = mu, sigma = sigma)
+   M1.paths[i,] <- price.path(s0 = s0, t = t, mu = mu, sigma = sigma, version = version)
 }
 
 M2.paths <- matrix(rep(NA, length.out = M2*(n+1)), nrow = M2)
 for (i in 1:M2){
-  M2.paths[i,] <- price.path(s0, t, mu, sigma)
+  M2.paths[i,] <- price.path(s0, t, mu, sigma, version)
 }
 
 M3.paths <- matrix(rep(NA, length.out = M3*(n+1)), nrow = M3)
 for (i in 1:M3){
-  M3.paths[i,] <- price.path(s0, t, mu, sigma)
+  M3.paths[i,] <- price.path(s0, t, mu, sigma, version)
 }
 
 M4.paths <- matrix(rep(NA, length.out = M4*(n+1)), nrow = M4)
 for (i in 1:M4){
-  M4.paths[i,] <- price.path(s0, t, mu, sigma)
+  M4.paths[i,] <- price.path(s0, t, mu, sigma, version)
 }
 
 M5.paths <- matrix(rep(NA, length.out = M5*(n+1)), nrow = M5)
 for (i in 1:M5){
-  M5.paths[i,] <- price.path(s0, t, mu, sigma)
+  M5.paths[i,] <- price.path(s0, t, mu, sigma, version)
 }
 ```
 
@@ -182,7 +203,11 @@ col2 <- rbind(M2.hat, CI2$l, CI2$u)
 col3 <- rbind(M3.hat, CI3$l, CI3$u)
 col4 <- rbind(M4.hat, CI4$l, CI4$u)
 col5 <- rbind(M5.hat, CI5$l, CI5$u)
+```
 
+\newpage
+
+```{r}
 hats <- cbind(col1, col2, col3, col4, col5)
 colnames(hats) <- c("M1 = 10", "M2 = 100", "M3 = 1000", "M4 = 10000", "M5 = 100000") 
 rownames(hats) <- c("Est.", "Lower CI", "Upper CI")
@@ -212,7 +237,7 @@ mean.value[length(mean.value)] # Drift / "mean value".
 # This can also be calculated simply by s0*exp(mu*T1).
 ```
 
-From the results above we can clearly see that the MC estimations move closer and closer to the analytical solution when the number of paths $M$ is increased. For $M_5$ the estimation is precise to the first 3 decimals, which I would regard as a very good estimation. We also see that the CI's clearly change with the increase of $M$; the lower value of the CI's increase with $M$ and the upper value of the CI's decrease with $M$, meaning that the $95\%$ CI's become narrower when the number of paths increase. This is what we expect from the MC theory, since the estimators are unbiased and, as stated by the strong Law of Large Numbers, the sample average converges a.s. to the true expected value. 
+From the results above we can clearly see that the MC estimations move closer and closer to the analytical solution when the number of paths $M$ is increased. For $M_5$ the estimation is precise to the first three decimals (depending on which `version` one uses; this is true for `onestep`), which I would regard as a very good estimation. We also see that the CI's clearly change with the increase of $M$; the lower value of the CI's increase with $M$ and the upper value of the CI's decrease with $M$, meaning that the $95\%$ CI's become narrower when the number of paths increase. This is what we expect from the MC theory, since the estimators are unbiased and, as stated by the strong Law of Large Numbers, the sample average converges a.s. to the true expected value. 
 
 Now we fix the number of paths $M^* = 1000$ and vary the values of $n$, i.e. the number of steps, while repeating the discussion done above. 
 
@@ -229,25 +254,25 @@ n4 <- 1000
 n1.paths <- matrix(rep(NA, length.out = M.star*(n1+1)), nrow = M.star)
 for (i in 1:M.star){
   t1 <- seq(0, T1, length.out = n1+1) # n steps means n+1 points in this vector. 
-  n1.paths[i,] <- price.path(s0, t1, mu, sigma)
+  n1.paths[i,] <- price.path(s0, t1, mu, sigma, version)
 }
 
 n2.paths <- matrix(rep(NA, length.out = M.star*(n2+1)), nrow = M.star)
 for (i in 1:M.star){
   t2 <- seq(0, T1, length.out = n2+1) # n steps means n+1 points in this vector. 
-  n2.paths[i,] <- price.path(s0, t2, mu, sigma)
+  n2.paths[i,] <- price.path(s0, t2, mu, sigma, version )
 }
 
 n3.paths <- matrix(rep(NA, length.out = M.star*(n3+1)), nrow = M.star)
 for (i in 1:M.star){
   t3 <- seq(0, T1, length.out = n3+1) # n steps means n+1 points in this vector. 
-  n3.paths[i,] <- price.path(s0, t3, mu, sigma)
+  n3.paths[i,] <- price.path(s0, t3, mu, sigma, version)
 }
 
 n4.paths <- matrix(rep(NA, length.out = M.star*(n4+1)), nrow = M.star)
 for (i in 1:M.star){
   t4 <- seq(0, T1, length.out = n4+1) # n steps means n+1 points in this vector. 
-  n4.paths[i,] <- price.path(s0, t4, mu, sigma)
+  n4.paths[i,] <- price.path(s0, t4, mu, sigma, version)
 }
 ```
 
