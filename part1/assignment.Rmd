@@ -37,7 +37,7 @@ library(reshape2)
 
 # Problem A - Euler-Maruyama Method
 
-First we implement a discretization for the Black-Scholes-Merton (BSM) price dynamics with the parameter set $(s_0, T, \mu, \sigma) = (12, 1, 0.03, 0.17)$, with $n = 250$ steps. We generate $M_1 = 10$, $M_2 = 100$, $M_3 = 1000$, $M_4 = 10000$ and $M_5 = 100000$ paths. The paths are plotted in separate figures for the three first cases. 
+We implement a discretization for the Black-Scholes-Merton (BSM) price dynamics with the parameter set $(s_0, T, \mu, \sigma) = (12, 1, 0.03, 0.17)$, with $n = 250$ steps. We generate $M_1 = 10$, $M_2 = 100$, $M_3 = 1000$, $M_4 = 10000$ and $M_5 = 100000$ paths. The paths are plotted in separate figures for the three first cases, together with the mean value of the price process. 
 
 ```{r}
 set.seed(061999)
@@ -55,36 +55,47 @@ M4 <- 10000
 M5 <- 100000
 ```
 
-The price dynamics are implemented with two different methods for calculating each path. The R function appended has the parameter `version`, which is used to select which version one wants to use to calculate each price path; `onestep` or `EM`. The first method implemented is the one step solution. Since the Wiener process has the distribution $W_t \sim N(0,t), \forall t \in (0, t]$, we can think of such a process as a cumulative summation of normally distributed random variables. Thus, on our uniform discrete grid 
+The price dynamics are implemented with two different methods for calculating each path. The R function appended has the parameter `version`, which is used to select which version one wants to use to calculate each price path; `onestep` or `EM`. The first method implemented is the one step solution. Since the Wiener process has the distribution $W_t \sim N(0,t), \forall t \in (0, t]$, and the variables $W_{t_1} - W_{t_0}, \hspace{0.1em} W_{t_2} - W_{t_1}, \ldots, \hspace{0.1em} W_{t_n} - W_{t_{n-1}}$ are independent, we can think of such a process as a cumulative sum of normally distributed random variables. Thus, on our uniform discrete grid 
 
 $$
 0 = t_0 < \ldots < t_n = T,
 $$ 
+
 we can simulate the following relation 
 
 $$
-X(t_0) = 0, \hspace{0.3em} X(t_1) \sim N(0,t_1) = N(0, t_0+h), \ldots, \hspace{0.3em} X(t_n) \sim N(t_0 + nh) = X(t_1) + \ldots + X(t_{n-1}), 
+\begin{split}
+  X(t_0) &= 0, \\
+  X(t_1) &\sim N(0,t_1) = N(0, t_0+h) \overset{t_0 = 0}{=} N(0,h),\\
+  X(t_2) &\sim N(0,t_2) = N(0, t_0+2h) \overset{t_0 = 0}{=} N(0,2h) \overset{\text{Indep.}}{=} N(0, h) + N(0,h) = 2X(t_1), \\
+  &\vdots \\
+  X(t_n) &\sim N(0, t_n) = N(0,t_0 + nh) = nX(t_1),
+\end{split}
 $$
-where $X$ represents the Brownian motion, $n$ is the number of steps in the discretization and $h = \frac{T}{n}$ is the step size. We insert this, replacing $W_t$, into the solution of the SDE
+
+where $X$ represents the Wiener process, $n$ is the number of steps in the discretization and $h = \frac{T}{n}$ is the step size. Thus, we simulate $n+1$ $N(0,h)$ variables and use their cumulative sum, at each grid point, as a random draw from the Brownian motion. We insert this, replacing $W_t$, into the solution of the SDE
 
 $$
 \mathrm{d}S_t = \mu S_t \mathrm{d}t + \sigma S_t\mathrm{d}W_t,
 $$
+
 which is 
 
 $$
 S_t = S_0 e^{\mu t}e^{\sigma W_t-\frac{\sigma^2}{2}t},
 $$
+
 which makes it possible to calculate the one step solution on the grid. The second method implemented is the Euler-Maruyama (EM) scheme
 
 $$
   \hat{S}_{t_{j+1}} = \hat{S}_{t_{j}} + \mu h\hat{S}_{t_{j}} + \sigma \sqrt{h} Z_{t_j} \hat{S}_{t_{j}}, 
 $$
+
 where $Z_{t_j}$ are standard normally distributed variables. 
 
 Notice that the two implementations give slightly different price paths and slightly different estimations. Keep in mind that the results from the `onestep` method are the ones shown and discussed during the remainder of the problem, even though the results using the `EM` method are highly comparable. 
 
-```{r, echo = F}
+```{r}
 # Price path stochastic process. 
 price.path <- function(s0, t, mu, sigma, version = "onestep"){
   if (version == "onestep"){
@@ -164,39 +175,39 @@ axis(1, at=seq(0,n, by = 10), labels = seq(0,1,length.out = n/10+1))
 
 The Monte Carlo estimator for $\hat{S}_T$ is calculated separately for each of the values of $M_i, \hspace{0.5em} i \in \{1,2,3,4,5\}$. The 95\% confidence interval (CI) is provided for each estimator. A comparison between these estimators and the analytical solution of $\mathbb{E}(S_T)$ is done and differences are explained. 
 
-The Monte Carlo estimator for $\hat{S}_T$ is simply calculated by averaging the values of all the different BSM price paths plotted above at time $T = 1$. Thus, in practice, we only need the last value of the price paths to calculate this estimator (and its standard error). The $(1-\alpha)\% = (1-0.05)\% = 95\%$ CIs are calculated by finding the standard error of the values of all the different BSM price paths at time $T$ and using the approximation given by 
+The Monte Carlo estimator for $\hat{S}_T$ is simply calculated by averaging the values of all the different BSM price paths plotted above at time $T = 1$. Thus, in practice, we only need the last value of the price paths to calculate this estimator (and its standard error). The $(1-\alpha) \cdot 100\% = (1-0.05)\cdot 100\% = 95\%$ CIs are calculated by finding the standard error of the values of all the different BSM price paths at time $T$ and using the approximation given by 
 
 $$
 CI_{\alpha} = \left(\hat{S}_T - z_{\alpha/2}\frac{se_{\hat{S}_T}}{\sqrt{M}}, \hat{S}_T + z_{\alpha/2}\frac{se_{\hat{S}_T}}{\sqrt{M}}\right), 
 $$
-where $se_{\hat{S}_T}$ is the aforementioned standard error,  $z_{\alpha/2}$ is the $1-\alpha$ quantile of the standard normal distribution and $M$ is the number of price paths simulated. This is an asymptotically valid $1-\alpha$ CI, which means it becomes closer to the exact analytic value when $M$ is increased. 
+where $se_{\hat{S}_T}$ is the aforementioned standard error,  $z_{\alpha/2}$ is the $1-\alpha$ quantile of the standard normal distribution and $M$ is the number of price paths simulated. This is an asymptotically valid $(1-\alpha)\cdot 100\%$ CI, which means it converges to the exact analytic value when $M$ is increased. 
 
 ```{r}
 # Calculate the Monte-Carlo estimator of $\hat{S}_T$ for each of the values of $M_i$.
-hat_ST <- function(M, n){
-  mean(M[,n+1]) # Calculate mean over last value of all M_i paths. 
+hat_ST <- function(M){
+  mean(M[,dim(M)[[2]]]) # Calculate mean over last value of all M_i paths. 
 }
 # This simply calculates the average over the last value of all the different paths. 
 
-CI_ST <- function(M, n){
-  s <- sd(M[,n+1]) # Calculate sample standard deviation over last value of all M_i paths. 
-  m <- hat_ST(M, n) # Calculate mean.
+CI_ST <- function(M){
+  s <- sd(M[,dim(M)[[2]]]) # Calculate sample standard deviation over last value of all M_i paths. 
+  m <- hat_ST(M) # Calculate mean.
   ste <- qnorm(0.975)*s/sqrt(dim(M)[[1]])
   return(list(l = m - ste, u = m + ste))
 }
 ```
 
 ```{r}
-M1.hat <- hat_ST(M1.paths, n) 
-CI1 <- CI_ST(M1.paths, n)
-M2.hat <- hat_ST(M2.paths, n) 
-CI2 <- CI_ST(M2.paths, n)
-M3.hat <- hat_ST(M3.paths, n) 
-CI3 <- CI_ST(M3.paths, n)
-M4.hat <- hat_ST(M4.paths, n) 
-CI4 <- CI_ST(M4.paths, n)
-M5.hat <- hat_ST(M5.paths, n) 
-CI5 <- CI_ST(M5.paths, n)
+M1.hat <- hat_ST(M1.paths) 
+CI1 <- CI_ST(M1.paths)
+M2.hat <- hat_ST(M2.paths) 
+CI2 <- CI_ST(M2.paths)
+M3.hat <- hat_ST(M3.paths) 
+CI3 <- CI_ST(M3.paths)
+M4.hat <- hat_ST(M4.paths) 
+CI4 <- CI_ST(M4.paths)
+M5.hat <- hat_ST(M5.paths) 
+CI5 <- CI_ST(M5.paths)
 
 col1 <- rbind(M1.hat, CI1$l, CI1$u)
 col2 <- rbind(M2.hat, CI2$l, CI2$u)
@@ -205,8 +216,6 @@ col4 <- rbind(M4.hat, CI4$l, CI4$u)
 col5 <- rbind(M5.hat, CI5$l, CI5$u)
 ```
 
-\newpage
-
 ```{r}
 hats <- cbind(col1, col2, col3, col4, col5)
 colnames(hats) <- c("M1 = 10", "M2 = 100", "M3 = 1000", "M4 = 10000", "M5 = 100000") 
@@ -214,21 +223,21 @@ rownames(hats) <- c("Est.", "Lower CI", "Upper CI")
 knitr::kable(hats, caption = "Monte Carlo Estimation for S_T, varying M")
 ```
 
-Now, what is the analytical solution for $\mathbb{E}(S_T)$? We know that the process of the risky asset in $t \in [0,T]$ is distributed as 
+Now, what is the analytic solution of $\mathbb{E}(S_T)$? We know that the process of the risky asset in $t \in [0,T]$ is distributed as 
 
 $$
 S_t \sim \mathcal{L}N(\mu^{*}, \sigma^{*2}), 
 $$
 
-where $\mathbb{E}(S_T) = \mu^{*}$. In addition, we know that, when $W_t \sim N(0,t)$, it follows that 
+where $\mathbb{E}(S_t) = \mu^{*}$. In addition, we know that, when $W_t \sim N(0,t)$,
 
 $$
 X_t \sim N(\ln S_0 - \left(\frac{\sigma^2}{2} - \mu\right)t, \sigma^2t) = N(\mu_{X_t}, \sigma^2_{X_t}), 
 $$
-where $S_t = e^{X_t}$. Finally, we know that the expected value of the log-normally distributed variable $S_t$ is $\exp{\left(\mu_{X_t} + \frac{\sigma^2_{X_t}}{2}\right)}$. This means that the analytical solution for $\mathbb{E}(S_T)$ is 
+where $S_t = e^{X_t}$. Finally, we know that the expected value of the log-normally distributed variable $S_t$ is $\exp{\left(\mu_{X_t} + \frac{\sigma^2_{X_t}}{2}\right)}$. This means that the analytic solution for $\mathbb{E}(S_T)$ is 
 
 $$
-\mu^* = \exp{\left(\mu_{X_t} + \frac{\sigma^2_{X_t}}{2}\right)} = \exp{\left(\ln S_0 -\left(\frac{\sigma^2}{2} - \mu\right)t + \frac{\sigma^2t}{2}\right)} = S_0 e^{\mu t},
+\mu^*\rvert_{t = T} = \exp{\left(\mu_{X_t} + \frac{\sigma^2_{X_t}}{2}\right)}\Bigg\rvert_{t = T} = \exp{\left(\ln S_0 -\left(\frac{\sigma^2}{2} - \mu\right)t + \frac{\sigma^2t}{2}\right)}\Bigg\rvert_{t = T} = S_0 e^{\mu t}\rvert_{t = T} = S_0 e^{\mu T},
 $$
 which in this case has the numerical value
 
@@ -237,7 +246,7 @@ mean.value[length(mean.value)] # Drift / "mean value".
 # This can also be calculated simply by s0*exp(mu*T1).
 ```
 
-From the results above we can clearly see that the MC estimations move closer and closer to the analytical solution when the number of paths $M$ is increased. For $M_5$ the estimation is precise to the first three decimals (depending on which `version` one uses; this is true for `onestep`), which I would regard as a very good estimation. We also see that the CI's clearly change with the increase of $M$; the lower value of the CI's increase with $M$ and the upper value of the CI's decrease with $M$, meaning that the $95\%$ CI's become narrower when the number of paths increase. This is what we expect from the MC theory, since the estimators are unbiased and, as stated by the strong Law of Large Numbers, the sample average converges a.s. to the true expected value. 
+From the results above we can clearly see that the MC estimations move closer and closer to the analytic solution when the number of paths $M$ is increased. For $M_5$ the estimation is precise to the first three decimals (depending on which `version` one uses; this is true for `onestep`), which I would regard as a very good estimation. We also see that the CI's clearly change with the increase of $M$; the lower value of the CI's increase with $M$ and the upper value of the CI's decrease with $M$, meaning that the $95\%$ CI's become narrower when the number of paths increase. This is what we expect from the MC theory, since the estimators are unbiased and, as stated by the strong Law of Large Numbers, the sample average converges a.s. to the true expected value. 
 
 Now we fix the number of paths $M^* = 1000$ and vary the values of $n$, i.e. the number of steps, while repeating the discussion done above. 
 
@@ -252,26 +261,26 @@ n4 <- 1000
 ```{r}
 # Find new paths. 
 n1.paths <- matrix(rep(NA, length.out = M.star*(n1+1)), nrow = M.star)
+t1 <- seq(0, T1, length.out = n1+1) # n steps means n+1 points in this vector. 
 for (i in 1:M.star){
-  t1 <- seq(0, T1, length.out = n1+1) # n steps means n+1 points in this vector. 
   n1.paths[i,] <- price.path(s0, t1, mu, sigma, version)
 }
 
 n2.paths <- matrix(rep(NA, length.out = M.star*(n2+1)), nrow = M.star)
+t2 <- seq(0, T1, length.out = n2+1) # n steps means n+1 points in this vector.
 for (i in 1:M.star){
-  t2 <- seq(0, T1, length.out = n2+1) # n steps means n+1 points in this vector. 
   n2.paths[i,] <- price.path(s0, t2, mu, sigma, version )
 }
 
 n3.paths <- matrix(rep(NA, length.out = M.star*(n3+1)), nrow = M.star)
+t3 <- seq(0, T1, length.out = n3+1) # n steps means n+1 points in this vector. 
 for (i in 1:M.star){
-  t3 <- seq(0, T1, length.out = n3+1) # n steps means n+1 points in this vector. 
   n3.paths[i,] <- price.path(s0, t3, mu, sigma, version)
 }
 
 n4.paths <- matrix(rep(NA, length.out = M.star*(n4+1)), nrow = M.star)
+t4 <- seq(0, T1, length.out = n4+1) # n steps means n+1 points in this vector. 
 for (i in 1:M.star){
-  t4 <- seq(0, T1, length.out = n4+1) # n steps means n+1 points in this vector. 
   n4.paths[i,] <- price.path(s0, t4, mu, sigma, version)
 }
 ```
@@ -285,14 +294,14 @@ matplot(t(n4.paths), type = "l")
 ```
 
 ```{r}
-n1.hat <- hat_ST(n1.paths, n1) 
-CI1 <- CI_ST(n1.paths, n1)
-n2.hat <- hat_ST(n2.paths, n2) 
-CI2 <- CI_ST(n2.paths, n2)
-n3.hat <- hat_ST(n3.paths, n3) 
-CI3 <- CI_ST(n3.paths, n3)
-n4.hat <- hat_ST(n4.paths, n4) 
-CI4 <- CI_ST(n4.paths, n4)
+n1.hat <- hat_ST(n1.paths) 
+CI1 <- CI_ST(n1.paths)
+n2.hat <- hat_ST(n2.paths) 
+CI2 <- CI_ST(n2.paths)
+n3.hat <- hat_ST(n3.paths) 
+CI3 <- CI_ST(n3.paths)
+n4.hat <- hat_ST(n4.paths) 
+CI4 <- CI_ST(n4.paths)
 
 col1 <- rbind(n1.hat, CI1$l, CI1$u)
 col2 <- rbind(n2.hat, CI2$l, CI2$u)
@@ -306,9 +315,7 @@ knitr::kable(hats, caption = "Monte Carlo Estimation for S_T, varying n")
 ```
 
 
-We can make several similar observations in this case; 
-
-Notice however that is is the number of paths $M$, and not the number of discretization points $n$, that yields dramatic differences when the value is increased. In other words, the estimates move closer to the true value when $n$ is increased while $M$ is fixed, but the changes seem to be more dramatic when $n$ is fixed and $M$ is increased. It is however important to notice that, in our experiment, $n$ is only changed across three orders of magnitude, while $M$ is changed across five orders of magnitude, which might lead to a somewhat biased observation or discussion. 
+We can make several observations in this case. First of all, the estimations are hovering around the true mean value of the price process. Secondly, the increase in precision is not as regular as in table 1. For example, the point estimate yielded from $n_1 = 12$ is the closest to the analytic solution (noting that the CI's are large), which is unexpected, since this is the least amount of steps used. Moreover, when increasing $n$, the lower limit of the CI decreases from $n_1$ to $n_2$, which is not as expected, considering the behaviour we saw in table 1. The same happens from $n_3$ to $n_4$. We also see an increase in the upper limit of the CI when moving from $n_1$ (or $n_2$) to $n_3$. What are the possible explanations? Of course, these results are (pseudo-) random, so changing the seed will change the results. Thus, a different seed might lead to CI's that look more regular or closer to what we expect. However, what this signals is that the number of paths $M$ is too low. Moreover, this also leads to the conclusion that the fineness of the grid is important to a certain extent, but if $M$ is too small, we are not able to improve the estimations simply by calculating each price path on a finer grid. Thus it is the number of paths $M$, and not the number of discretization points $n$, that yields dramatic differences when its value is increased. In other words, the estimates hover around the true value when $n$ is increased while $M$ is fixed, but the changes seem to be more dramatic when $n$ is fixed and $M$ is increased. It is however important to notice that, in our experiment, $n$ is only changed across three orders of magnitude, while $M$ is changed across five orders of magnitude, which might lead to a somewhat biased discussion. All in all, the conclusion is that a large value of $M$ is more important compared to a very large value of $n$ (to a certain extent), which is in accordance with the MC theory, as mentioned earlier.
 
 # Problem B - Option Pricing I
 
@@ -342,7 +349,7 @@ The price is approximately equal to `r round(BSM.price, 2)`, when rounded to 2 d
 
 We implement a Monte Carlo estimator for the price of this option by simulating paths with the Euler-Maruyama method for steps $n = 10, 100, 1000$ and paths $M = 10, 100, 1000, 10000, 100000$.
 
-Notice that for the path-independent options, like standard European call and put options, it is not needed to save the price path as is done in my implementation. This is done to keep the function as general as possible, in order to re-use it for the rest of the assignment. To increase computational efficiency and lessen the use of memory one could simply iteratively overwrite one variable, instead of saving the entire price path history.
+Notice that for the path-independent options, like standard European Call and Put options, it is not necessary to save the price path as is done in my implementation. This is done to keep the function as general as possible, in order to re-use it for the rest of the assignment. To increase computational efficiency and decrease the use of memory one could simply iteratively overwrite one variable, instead of saving the entire price path history.
 
 ```{r}
 # Monte Carlo estimator for Euler-Maruyama. 
@@ -351,7 +358,7 @@ MC <- function(M, n, r, s0, mu, sigma, T1, payoff.profile, set.S, ...){
   h <- T1/n # Calculate step size for use in Euler-Maruyama. 
   C.values <- rep(NA, length.out = M) # Initiate vector for saving payoffs per path. 
   for (i in 1:M){ # Initiate loop for M path.
-    Z <- rnorm(n+1) # Generate n random variables standard normally. 
+    Z <- rnorm(n) # Generate n random variables standard normally. 
     S.values <- rep(NA, length.out = n+1) # Initiate vector for saving price path. 
     S.values[1] <- s0 # Initiate starting price at time t = 0. 
     for (j in 2:(n+1)){ # Loop for Euler-Maruyama - recursively estimate price path. 
@@ -399,7 +406,7 @@ for (i in 1:length(M.list)){
 
 ```{r}
 # Calculations of relative error and absolute error.
-rel.errors <- abs(BSM.price - combinations)/BSM.price
+rel.errors <- (BSM.price - combinations)/BSM.price
 abs.errors <- abs(BSM.price - combinations)
 ```
 
@@ -419,19 +426,15 @@ knitr::kable(df.abs, caption = "Absolute Errors")
 
 How can these results be interpreted in view of $n$ and $M$?
 
-First of all, we can clearly see that, in the majority of cases, the absolute values of the errors decreases when the number of paths $M$ increases. This is coherent with what we expect, as noted earlier, based on the MC estimator. The best value obtained for the relative error is $\approx -0.0019$, meaning that we are able to get within $0.2\%$ of the closed form solution, which is very accurate. 
+First of all, we can clearly see that, in the majority of cases, the absolute values of both types of errors decrease when the number of paths $M$ increases. This is coherent with what we expect, as noted earlier, based on the MC estimator. The best value obtained for the relative error is $\approx -0.0017$, meaning that we are able to get within $0.2\%$ of the closed form solution, which is very accurate. 
 
-Secondly, we notice that it is the change in $M$ that leads to dramatic changes (often of an order of magnitude) in the errors, as already noted in Problem A, where a change in $n$ does not lead to the same dramatic changes BE SURE THAT THIS MAKES SENSE!
+Secondly, we notice that it is the change in $M$ that generally leads to more dramatic changes (often of an order of magnitude) in the (absolute values of the) errors, as already noted in Problem A. Thus, from the errors seen in these tables, we would conclude the same as in Problem A regarding the level of importance of the values $M$ and $n$. Increasing $M$ (moving south in the tables), while $n$ is fixed generally decreases the error, whereas this does not happen as frequently when increasing $n$ (moving east in the tables), while $M$ is fixed. 
 
 Additionally, we notice that the lowest errors tend to be found in the lower right corner of the tables, which is as expected, since this is the area of the table with the finest discretized grids (large $n$) and more paths (large $M$).
 
-WHAT ELSE CAN I COMMENT ON HERE?!
+Moreover, notice that all absolute values are smaller in table 3 (relative errors) compared to their respective value in table 4 (absolute errors), since the relative errors are calculated in almost the same way as the absolute errors, where the only difference is not taking absolute values and dividing by the BSM price ($\approx 3.15$). Notice that if the absolute value is added in the calculation of the relative errors, the values are all the same, with the seven negative signs disappearing. I cannot find a clear pattern in the negative signs that appear in the relative errors, which means that it is not clear that some specific combinations of $n$ and $M$ overestimate the BSM price. 
 
-Moreover, notice that all values are smaller in Table 3 (relative errors) compared to their respective value in Table 4 (absolute errors), since the relative errors are calculated in almost the same way as the absolute errors, where the only difference is not taking absolute values and dividing by the BSM price ($\approx 3.15$). Notice that if the absolute value is added in the calculation of the relative errors, the values are all the same, with the five negative signs disappearing. 
-
-I cannot find a clear pattern in the negative signs that appear in the relative errors, which means that it is not clear that some combinations of $n$ and $M$ overestimate the BSM price. 
-
-The results that are yielded for values of $M$ smaller than 1000 are useless, since they are very bad estimations far from the BSM price. When setting $M = 1000$ we are getting into the 5% domain of relative errors, which is further improved when $M$ is further increased. Thus, we see that we need a (relatively) substantial amount of paths in order for the MC estimator to gain useful estimations - it is not enough with 10 or 100 paths. 
+The results that are yielded for values of $M$ smaller than 1000 are useless, since they are very bad estimations far from the BSM price. When setting $M = 1000$ we are getting into the 5% domain of relative errors, which is further improved when $M$ is further increased. Thus, we see that we need a (relatively) substantial amount of paths in order for the MC estimator to yield useful estimations - it is not enough with 10 or 100 paths. 
 
 # Problem C - Option Pricing II
 
@@ -517,17 +520,18 @@ M3.MC <- M3.results$MC
 
 ```{r}
 # Now we can calculate the 95% CI's. This is done using the same formula as explained earlier. 
-lookback.CI <- function(M.path.values, M.MC){
-  z.alpha <- qnorm(0.975)
-  M <- length(M.path.values)
-  sd1 <- sd(M.path.values)
-  ste <- z.alpha*sd1/sqrt(M)
-  list(l = M.MC - ste, u = M.MC + ste)
+lookback.CI <- function(M.path.values){
+  z.alpha <- qnorm(0.975) # Quantile. 
+  M <- length(M.path.values) # Number of paths. 
+  M.MC <- mean(M.path.values) # Point estimator
+  sd1 <- sd(M.path.values) # Standard error.
+  ste <- z.alpha*sd1/sqrt(M) # +- value. 
+  list(l = M.MC - ste, u = M.MC + ste) # Return CI. 
 }
 
-CI1 <- lookback.CI(M1.path.values, M1.MC)
-CI2 <- lookback.CI(M2.path.values, M2.MC)
-CI3 <- lookback.CI(M3.path.values, M3.MC)
+CI1 <- lookback.CI(M1.path.values)
+CI2 <- lookback.CI(M2.path.values)
+CI3 <- lookback.CI(M3.path.values)
 
 col1 <- rbind(M1.MC, CI1$l, CI1$u)
 col2 <- rbind(M2.MC, CI2$l, CI2$u)
@@ -539,4 +543,4 @@ rownames(hats) <- c("Est.", "Lower CI", "Upper CI")
 knitr::kable(hats, caption = "Monte Carlo Estimation for Lookback Option, Varying M")
 ```
 
-Similar observations as in earlier problems can be made concerning how these CI's change with increasing $M$; they become narrower with increasing number of paths, which is the behavior we expect. 
+Similar observations as in earlier problems can be made concerning how these CI's change with increasing $M$; they become narrower with increasing number of paths, which is the behavior we expect. Notice however that in some of the cases, the lower CI limit decreases with increasing $M$ and in some of the cases the upper CI limit increases with increasing $M$. If I was to choose the fair price of this Lookback option to one decimal place, perhaps to use as a first estimate in a practical application, I would set it to $9.2$, since this is within the CI of the price estimated with the largest $M$. The $95\%$ CI's can be interpreted as; out of all the $95\%$ CI's calculated from this "experiment" or procedure, $95\%$ of them should contain the true fair price of the option. 
